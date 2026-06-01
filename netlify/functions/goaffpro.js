@@ -19,6 +19,7 @@ exports.handler = async (event) => {
   const params = event.queryStringParameters || {};
   const endpoint = params.endpoint || 'affiliates';
   delete params.endpoint;
+    if (!params.fields) params.fields = 'id,name,email,referral_code,coupon_code,status,commission_rate,num_visitors,date_created,total_earned,available_balance';
 
   const query = new URLSearchParams(params).toString();
   const url = `https://api.goaffpro.com/v1/admin/${endpoint}${query ? '?' + query : ''}`;

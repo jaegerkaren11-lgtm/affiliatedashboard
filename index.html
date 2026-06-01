@@ -1540,7 +1540,7 @@ async function syncGoAffPro(mode='all') {
   // Use corsproxy.io to bypass CORS — GoAffPro blocks direct browser calls
   const BASE = 'https://api.goaffpro.com/v1/admin';
   const PROXY = 'https://corsproxy.io/?url=';
-  const proxyFetch = (path) => fetch(`${PROXY}${encodeURIComponent(BASE+path)}`, {
+  const proxyFetch = (path) => fetch(`/.netlify/functions/goaffpro?endpoint=${path.replace(/^\//,'').split('?')[0]}&${path.split('?')[1]||''}`, {
     headers: { 'x-goaffpro-access-token': token, 'Content-Type': 'application/json' }
   });
 
@@ -1580,7 +1580,7 @@ async function syncGoAffPro(mode='all') {
 
       while(hasMore){
         const targetUrl = encodeURIComponent(`${BASE}/orders?count=250&offset=${offset}`);
-        const resp = await fetch(`${PROXY}${targetUrl}`, {
+        const resp = await fetch(`/.netlify/functions/goaffpro?endpoint=orders&count=250&offset=${offset}`, {
           headers: {
             'x-goaffpro-access-token': token,
             'Content-Type': 'application/json',

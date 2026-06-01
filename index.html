@@ -1,0 +1,1646 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AffiliTrack — Balkonstrom.com</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+:root{
+  --bg:#F5F4F0;--bg2:#FFFFFF;--bg3:#ECEAE5;--bg4:#E4E2DC;
+  --txt:#1C1B18;--txt2:#6A6A65;--txt3:#9E9D98;
+  --border:rgba(0,0,0,0.08);--border2:rgba(0,0,0,0.15);
+  --blue:#1A65B5;--blue-l:#E8F1FB;--blue-d:#0E4585;
+  --green:#357A0E;--green-l:#EBF5DC;
+  --amber:#B87318;--amber-l:#FAF0DC;
+  --red:#B03030;--red-l:#FAEAEA;
+  --purple:#4E48B0;--purple-l:#EEEDFB;
+  --r:8px;--rl:12px;
+  --sidebar:215px;
+}
+@media(prefers-color-scheme:dark){:root{
+  --bg:#191917;--bg2:#222220;--bg3:#2A2A27;--bg4:#323230;
+  --txt:#F0EDE7;--txt2:#9A9A95;--txt3:#65655F;
+  --border:rgba(255,255,255,0.08);--border2:rgba(255,255,255,0.14);
+}}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,sans-serif;background:var(--bg);color:var(--txt);font-size:13px;line-height:1.5}
+/* Layout */
+.app{display:flex;height:100vh;overflow:hidden}
+.sidebar{width:var(--sidebar);background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;overflow-y:auto}
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
+.topbar{background:var(--bg2);border-bottom:1px solid var(--border);padding:10px 20px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;gap:12px}
+.content{flex:1;overflow-y:auto;padding:20px}
+.view{display:none}.view.active{display:block}
+/* Sidebar */
+.logo{padding:14px 16px 12px;border-bottom:1px solid var(--border)}
+.logo-name{font-size:14px;font-weight:700;letter-spacing:-.3px}
+.logo-sub{font-size:10px;color:var(--txt3);margin-top:1px;letter-spacing:.02em}
+.nav-grp{font-size:9px;font-weight:700;color:var(--txt3);padding:12px 16px 3px;text-transform:uppercase;letter-spacing:.1em}
+.nav-item{display:flex;align-items:center;gap:8px;padding:7px 16px;font-size:12px;color:var(--txt2);cursor:pointer;border-left:2px solid transparent;transition:all .1s;user-select:none;white-space:nowrap}
+.nav-item:hover{background:var(--bg3);color:var(--txt)}
+.nav-item.active{background:var(--bg3);color:var(--blue);border-left-color:var(--blue);font-weight:600}
+.nav-dot{width:5px;height:5px;border-radius:50%;background:currentColor;opacity:.5;flex-shrink:0}
+/* Topbar */
+.page-title{font-size:14px;font-weight:700;letter-spacing:-.2px;white-space:nowrap}
+.topbar-r{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.date-pill{font-size:11px;color:var(--txt2);background:var(--bg3);border:1px solid var(--border);padding:3px 10px;border-radius:100px;white-space:nowrap}
+/* Buttons */
+.btn{display:inline-flex;align-items:center;gap:5px;font-size:11px;padding:5px 12px;border-radius:var(--r);border:1px solid var(--border2);background:transparent;color:var(--txt);cursor:pointer;font-family:inherit;transition:all .1s;white-space:nowrap}
+.btn:hover{background:var(--bg3)}.btn:active{transform:scale(.98)}
+.btn-p{background:var(--blue);color:#fff;border-color:var(--blue)}.btn-p:hover{background:var(--blue-d)}
+.btn-danger{background:var(--red-l);color:var(--red);border-color:#D08080}
+/* Cards */
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--rl);padding:16px;margin-bottom:14px}
+.card-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:13px}
+.card-title{font-size:12px;font-weight:700;letter-spacing:-.1px}
+.card-link{font-size:11px;color:var(--blue);cursor:pointer;white-space:nowrap}
+.card-link:hover{text-decoration:underline}
+/* Grids */
+.g2{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:14px}
+.g2e{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.g3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:14px}
+.g4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:14px}
+@media(max-width:1100px){.g2,.g2e{grid-template-columns:1fr}.g4{grid-template-columns:1fr 1fr}}
+/* Metrics */
+.metric{background:var(--bg3);border-radius:var(--r);padding:12px 14px}
+.mlbl{font-size:9px;font-weight:700;color:var(--txt2);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px}
+.mval{font-size:20px;font-weight:700;letter-spacing:-.5px}
+.mch{font-size:10px;margin-top:2px}
+.up{color:var(--green)}.dn{color:var(--red)}.neu{color:var(--txt2)}
+/* Badges */
+.badge{display:inline-block;font-size:9px;font-weight:700;padding:2px 7px;border-radius:100px;white-space:nowrap;letter-spacing:.02em}
+.ba{background:var(--green-l);color:var(--green)}
+.bw{background:var(--amber-l);color:var(--amber)}
+.bi{background:var(--bg3);color:var(--txt2);border:1px solid var(--border)}
+.bb{background:var(--blue-l);color:var(--blue-d)}
+.br{background:var(--red-l);color:var(--red)}
+.bp{background:var(--purple-l);color:var(--purple)}
+/* Tables */
+.tw{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:11px}
+th{text-align:left;padding:6px 10px;color:var(--txt2);font-weight:700;border-bottom:1px solid var(--border);white-space:nowrap;font-size:9px;text-transform:uppercase;letter-spacing:.07em}
+td{padding:9px 10px;border-bottom:1px solid var(--border);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tbody tr:hover td{background:var(--bg3)}
+/* Avatar */
+.av{width:26px;height:26px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;flex-shrink:0}
+.pc{display:flex;align-items:center;gap:7px}
+/* Form */
+.form-group{margin-bottom:11px}
+.form-label{display:block;font-size:10px;font-weight:700;color:var(--txt2);margin-bottom:3px;text-transform:uppercase;letter-spacing:.05em}
+.form-input{width:100%;padding:7px 10px;border:1px solid var(--border2);border-radius:var(--r);font-size:12px;background:var(--bg2);color:var(--txt);font-family:inherit;outline:none;transition:border .1s}
+.form-input:focus{border-color:var(--blue);box-shadow:0 0 0 2px rgba(26,101,181,.12)}
+.form-sel{appearance:none;background-image:url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%236A6A65' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:28px;cursor:pointer}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+/* Modal */
+.modal-ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;align-items:center;justify-content:center;padding:20px}
+.modal-ov.open{display:flex}
+.modal{background:var(--bg2);border-radius:var(--rl);padding:22px;width:520px;max-width:100%;border:1px solid var(--border2);max-height:90vh;overflow-y:auto}
+.modal-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.modal-title{font-size:14px;font-weight:700;letter-spacing:-.2px}
+.modal-x{background:none;border:none;font-size:18px;cursor:pointer;color:var(--txt2);padding:2px 7px;border-radius:5px;line-height:1}
+.modal-x:hover{background:var(--bg3)}
+.modal-ft{display:flex;justify-content:flex-end;gap:8px;margin-top:16px;padding-top:14px;border-top:1px solid var(--border)}
+/* Toast */
+.toast{position:fixed;bottom:20px;right:20px;background:var(--txt);color:var(--bg2);padding:9px 16px;border-radius:var(--r);font-size:12px;font-weight:600;opacity:0;transform:translateY(6px);transition:all .2s;pointer-events:none;z-index:2000}
+.toast.show{opacity:1;transform:translateY(0)}
+/* Bars */
+.bar-row{display:flex;align-items:center;gap:8px;margin-bottom:7px;font-size:11px}
+.bar-lbl{width:110px;color:var(--txt2);flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:10px}
+.bar-track{flex:1;height:5px;background:var(--bg3);border-radius:3px;overflow:hidden}
+.bar-fill{height:100%;border-radius:3px;transition:width .5s ease}
+.bar-val{width:56px;text-align:right;color:var(--txt2);flex-shrink:0;font-weight:600;font-size:10px}
+/* Tab bar */
+.tab-bar{display:flex;border-bottom:1px solid var(--border);margin-bottom:16px}
+.tab{padding:8px 14px;font-size:12px;color:var(--txt2);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px}
+.tab:hover{color:var(--txt)}.tab.active{color:var(--blue);border-bottom-color:var(--blue);font-weight:600}
+/* Search bar */
+.period-btn{font-size:11px;padding:4px 11px;border-radius:100px;border:1px solid var(--border2);background:transparent;color:var(--txt2);cursor:pointer;font-family:inherit;transition:all .1s;white-space:nowrap}
+.period-btn:hover{background:var(--bg3);color:var(--txt)}
+.period-btn.active{background:var(--blue);color:#fff;border-color:var(--blue);font-weight:600}
+.search-input{flex:1;min-width:200px;padding:7px 10px;border:1px solid var(--border2);border-radius:var(--r);font-size:12px;background:var(--bg2);color:var(--txt);font-family:inherit;outline:none}
+.search-input:focus{border-color:var(--blue)}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="logo">
+      <div class="logo-name">AffiliTrack</div>
+      <div class="logo-sub">Balkonstrom.com</div>
+    </div>
+    <nav>
+      <div class="nav-item active" data-view="dashboard"><span class="nav-dot"></span>Dashboard</div>
+      <div class="nav-item" data-view="pipeline"><span class="nav-dot"></span>🚦 Affiliate Pipeline</div>
+      <div class="nav-item" data-view="nosales"><span class="nav-dot"></span>⚠️ Ohne Sales</div>
+      <div class="nav-grp">Daten</div>
+      <div class="nav-item" data-view="alltime"><span class="nav-dot"></span>All-Time</div>
+      <div class="nav-item" data-view="monthly"><span class="nav-dot"></span>Monatsübersicht</div>
+      <div class="nav-item" data-view="sales"><span class="nav-dot"></span>Alle Sales</div>
+      <div class="nav-item" data-view="affiliates"><span class="nav-dot"></span>Affiliates</div>
+      <div class="nav-grp">Berichte</div>
+      <div class="nav-item" data-view="reports"><span class="nav-dot"></span>Monatsberichte</div>
+      <div class="nav-item" data-view="reviews"><span class="nav-dot"></span>Quartals-Reviews</div>
+      <div class="nav-item" data-view="reminders"><span class="nav-dot"></span>Erinnerungen</div>
+      <div class="nav-grp">System</div>
+      <div class="nav-item" data-view="upload"><span class="nav-dot"></span>🔄 GoAffPro Sync</div>
+      <div class="nav-item" data-view="settings"><span class="nav-dot"></span>Einstellungen</div>
+    </nav>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="page-title" id="page-title">Dashboard</div>
+      <div class="topbar-r">
+        <span class="date-pill" id="date-pill"></span>
+        <button class="btn btn-p" id="top-btn" onclick="handleTopBtn()">+ Sale hinzufügen</button>
+      </div>
+    </div>
+    <div class="content">
+
+      <!-- DASHBOARD -->
+      <div class="view active" id="view-dashboard">
+
+        <!-- Period filter -->
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;flex-wrap:wrap;">
+          <span style="font-size:11px;font-weight:700;color:var(--txt2);white-space:nowrap;">Zeitraum:</span>
+          <div style="display:flex;gap:4px;flex-wrap:wrap;" id="period-tabs">
+            <button class="period-btn" data-period="today" onclick="setPeriod('today',this)">Heute</button>
+            <button class="period-btn" data-period="yesterday" onclick="setPeriod('yesterday',this)">Gestern</button>
+            <button class="period-btn" data-period="week" onclick="setPeriod('week',this)">Diese Woche</button>
+            <button class="period-btn" data-period="lastweek" onclick="setPeriod('lastweek',this)">Letzte Woche</button>
+            <button class="period-btn" data-period="month" onclick="setPeriod('month',this)">Dieser Monat</button>
+            <button class="period-btn" data-period="lastmonth" onclick="setPeriod('lastmonth',this)">Letzter Monat</button>
+            <button class="period-btn" data-period="quarter" onclick="setPeriod('quarter',this)">Dieses Quartal</button>
+            <button class="period-btn" data-period="year" onclick="setPeriod('year',this)">Dieses Jahr</button>
+            <button class="period-btn active" data-period="all" onclick="setPeriod('all',this)">Gesamt</button>
+            <button class="period-btn" data-period="custom" onclick="setPeriod('custom',this)" id="custom-btn">Benutzerdefiniert</button>
+          </div>
+          <div id="custom-date-range" style="display:none;align-items:center;gap:6px;">
+            <input type="date" class="form-input" id="custom-from" style="width:140px;padding:4px 8px;font-size:11px;" onchange="applyCustomPeriod()">
+            <span style="font-size:11px;color:var(--txt2);">bis</span>
+            <input type="date" class="form-input" id="custom-to" style="width:140px;padding:4px 8px;font-size:11px;" onchange="applyCustomPeriod()">
+          </div>
+          <span id="period-label" style="font-size:11px;color:var(--txt3);margin-left:4px;"></span>
+        </div>
+
+        <div class="g4" style="grid-template-columns:repeat(6,minmax(0,1fr));">
+          <div class="metric"><div class="mlbl">Umsatz</div><div class="mval" id="d-rev">—</div><div class="mch neu" id="d-rev-lbl">—</div></div>
+          <div class="metric"><div class="mlbl">Provisionen</div><div class="mval" id="d-com">—</div><div class="mch neu" id="d-comr">—</div></div>
+          <div class="metric"><div class="mlbl">Sales</div><div class="mval" id="d-ord">—</div><div class="mch neu" id="d-aov">—</div></div>
+          <div class="metric"><div class="mlbl">Mit Sales / Gesamt</div><div class="mval" id="d-aff">—</div><div class="mch neu">Affiliates</div></div>
+          <div class="metric" style="cursor:pointer;" onclick="navigate('nosales')"><div class="mlbl">Ohne Sales ⚠️</div><div class="mval" id="d-nosales-val" style="color:var(--red);">—</div><div class="mch dn">→ Größter Hebel</div></div>
+          <div class="metric" style="cursor:pointer;" onclick="navigate('pipeline')"><div class="mlbl">Activation Rate</div><div class="mval" id="d-actrate">—</div><div class="mch" id="d-actrate-ch">—</div></div>
+        </div>
+        <div class="g2">
+          <div>
+            <div class="card">
+              <div class="card-hd"><div class="card-title" id="d-top-title">Top Affiliates</div><span class="card-link" onclick="navigate('alltime')">Alle →</span></div>
+              <div class="tw"><table><thead><tr><th>#</th><th>Affiliate</th><th>Sales</th><th>Umsatz</th><th>Provision</th><th>Prov.%</th></tr></thead><tbody id="d-top"></tbody></table></div>
+            </div>
+            <div class="card">
+              <div class="card-hd"><div class="card-title" id="d-chart-title">Umsatz-Verlauf</div></div>
+              <div style="position:relative;height:190px"><canvas id="d-chart" role="img" aria-label="Umsatzverlauf">Umsatzverlauf</canvas></div>
+            </div>
+          </div>
+          <div>
+            <div class="card">
+              <div class="card-hd"><div class="card-title">Umsatzanteile</div></div>
+              <div id="d-bars"></div>
+            </div>
+            <div class="card">
+              <div class="card-hd"><div class="card-title" id="d-period-card-title">Zeitraum-Details</div><span class="card-link" onclick="navigate('monthly')">Detail →</span></div>
+              <div class="tw"><table><thead><tr><th>Affiliate</th><th>Sales</th><th>Umsatz</th><th>Provision</th></tr></thead><tbody id="d-lastmonth"></tbody></table></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ALL-TIME -->
+      <div class="view" id="view-alltime">
+        <div class="g3">
+          <div class="metric"><div class="mlbl">Gesamtumsatz</div><div class="mval" id="at-rev">—</div><div class="mch neu">12 Monate</div></div>
+          <div class="metric"><div class="mlbl">Provisionen</div><div class="mval" id="at-com">—</div><div class="mch neu" id="at-comr">—</div></div>
+          <div class="metric"><div class="mlbl">Ø pro Sale</div><div class="mval" id="at-avg">—</div><div class="mch neu" id="at-ord">—</div></div>
+        </div>
+        <div class="card">
+          <div class="card-hd"><div class="card-title">All-Time Ergebnisse je Affiliate</div></div>
+          <div class="tw"><table><thead><tr><th>#</th><th>Affiliate</th><th>E-Mail</th><th>Sales</th><th>Umsatz</th><th>Provision</th><th>Prov.%</th><th>Ø/Sale</th><th>Aktiv seit</th></tr></thead><tbody id="at-table"></tbody></table></div>
+        </div>
+        <div class="card">
+          <div class="card-hd"><div class="card-title">Monatsentwicklung (alle Affiliates)</div></div>
+          <div style="position:relative;height:210px"><canvas id="at-chart" role="img" aria-label="Monatliche Entwicklung">Monatliche Entwicklung</canvas></div>
+        </div>
+      </div>
+
+      <!-- MONTHLY -->
+      <div class="view" id="view-monthly">
+        <div class="search-bar">
+          <label style="font-size:11px;font-weight:700;color:var(--txt2);white-space:nowrap;">Monat:</label>
+          <select class="form-input form-sel" id="mo-sel" style="width:180px;" onchange="renderMonthly()"></select>
+        </div>
+        <div class="g3">
+          <div class="metric"><div class="mlbl">Umsatz</div><div class="mval" id="mo-rev">—</div><div class="mch" id="mo-revch">—</div></div>
+          <div class="metric"><div class="mlbl">Provision</div><div class="mval" id="mo-com">—</div><div class="mch neu" id="mo-comr">—</div></div>
+          <div class="metric"><div class="mlbl">Sales</div><div class="mval" id="mo-ord">—</div><div class="mch neu">Approved</div></div>
+        </div>
+        <div class="g2">
+          <div class="card">
+            <div class="card-hd"><div class="card-title" id="mo-card-title">Ergebnisse</div></div>
+            <div class="tw"><table><thead><tr><th>Affiliate</th><th>Sales</th><th>Umsatz</th><th>Provision</th><th>Prov.%</th><th>vs. Vormonat</th><th>Anteil</th></tr></thead><tbody id="mo-table"></tbody></table></div>
+          </div>
+          <div>
+            <div class="card">
+              <div class="card-hd"><div class="card-title">Anteile</div></div>
+              <div id="mo-bars"></div>
+            </div>
+            <div class="card">
+              <div class="card-hd"><div class="card-title">Umsatz-Verlauf</div></div>
+              <div style="position:relative;height:160px"><canvas id="mo-chart" role="img" aria-label="Umsatzverlauf">Umsatzverlauf</canvas></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ALL SALES -->
+      <div class="view" id="view-sales">
+        <div class="search-bar">
+          <input class="search-input" placeholder="Suche nach Affiliate, Order-ID, Datum…" id="sales-search" oninput="renderSales()">
+          <select class="form-input form-sel" id="sales-mo-filter" style="width:160px;" onchange="renderSales()">
+            <option value="">Alle Monate</option>
+          </select>
+          <select class="form-input form-sel" id="sales-aff-filter" style="width:180px;" onchange="renderSales()">
+            <option value="">Alle Affiliates</option>
+          </select>
+          <span id="sales-count" style="font-size:11px;color:var(--txt2);white-space:nowrap;"></span>
+        </div>
+        <div class="card" style="padding:0;overflow:hidden;">
+          <div class="tw">
+            <table id="sales-table">
+              <thead><tr><th>Datum</th><th>Order-ID</th><th>Affiliate</th><th>Umsatz</th><th>Provision</th><th>Prov.%</th><th>Coupon</th><th></th></tr></thead>
+              <tbody id="sales-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- PIPELINE -->
+      <div class="view" id="view-pipeline">
+        <div class="g4" id="pipe-kpis"></div>
+        <div class="g2">
+          <div>
+            <div class="card">
+              <div class="card-hd"><div class="card-title">Affiliate Pipeline — Status Übersicht</div></div>
+              <div id="pipe-funnel"></div>
+            </div>
+            <div class="card">
+              <div class="card-hd"><div class="card-title">Alle Affiliates — Health Score</div></div>
+              <div class="tw"><table><thead><tr><th>Affiliate</th><th>Typ</th><th>Status</th><th>Letzter Sale</th><th>Sales gesamt</th><th>Umsatz</th><th>Coupon</th><th>Onboarding</th><th>Nächste Aktion</th><th></th></tr></thead><tbody id="pipe-table"></tbody></table></div>
+            </div>
+          </div>
+          <div>
+            <div class="card">
+              <div class="card-hd"><div class="card-title">Early Warning Alerts</div></div>
+              <div id="pipe-alerts"></div>
+            </div>
+            <div class="card" style="margin-top:0;">
+              <div class="card-hd"><div class="card-title">Activation Rate</div></div>
+              <div id="pipe-rates"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- NO-SALES -->
+      <div class="view" id="view-nosales">
+        <div class="g3" id="nosales-kpis"></div>
+        <div class="tab-bar" id="nosales-tabs">
+          <div class="tab active" onclick="setNosalesTab('all',this)">Alle ohne Sales</div>
+          <div class="tab" onclick="setNosalesTab('traffic',this)">Traffic, kein Sale</div>
+          <div class="tab" onclick="setNosalesTab('notraffic',this)">Kein Traffic</div>
+          <div class="tab" onclick="setNosalesTab('new',this)">Neu (&lt;30 Tage)</div>
+        </div>
+        <div class="card" style="padding:0;overflow:hidden;">
+          <div class="tw"><table><thead><tr><th>Affiliate</th><th>Typ</th><th>Aktiv seit</th><th>Est. Klicks</th><th>Letzter Sale</th><th>Coupon</th><th>Health</th><th>Priorität</th><th>Nächste Aktion</th><th>Aktionen</th></tr></thead><tbody id="nosales-table"></tbody></table></div>
+        </div>
+      </div>
+
+      <!-- AFFILIATES -->
+      <div class="view" id="view-affiliates">
+        <div class="search-bar">
+          <input class="search-input" placeholder="Affiliate suchen…" id="aff-search" oninput="renderAffiliates()">
+        </div>
+        <div class="card" style="padding:0;overflow:hidden;">
+          <div class="tw"><table><thead><tr><th>Affiliate</th><th>E-Mail</th><th>Sales</th><th>Umsatz</th><th>Provision</th><th>Prov.%</th><th>Ø/Sale</th><th>Aktiv seit</th><th></th></tr></thead><tbody id="aff-table"></tbody></table></div>
+        </div>
+      </div>
+
+      <!-- REPORTS -->
+      <div class="view" id="view-reports">
+        <div class="search-bar">
+          <label style="font-size:11px;font-weight:700;color:var(--txt2);white-space:nowrap;">Monat:</label>
+          <select class="form-input form-sel" id="rep-sel" style="width:180px;" onchange="renderReports()"></select>
+          <div style="margin-left:auto;display:flex;gap:8px;">
+            <button class="btn" onclick="toast('PDF-Export gestartet…')">Alle exportieren</button>
+            <button class="btn btn-p" onclick="toast('Alle Berichte versendet!')">Alle versenden</button>
+          </div>
+        </div>
+        <div class="g3">
+          <div class="metric"><div class="mlbl">Affiliates</div><div class="mval" id="rep-aff">—</div><div class="mch neu" id="rep-ord">—</div></div>
+          <div class="metric"><div class="mlbl">Umsatz</div><div class="mval" id="rep-rev">—</div><div class="mch" id="rep-revch">—</div></div>
+          <div class="metric"><div class="mlbl">Provision</div><div class="mval" id="rep-com">—</div><div class="mch neu" id="rep-comr">—</div></div>
+        </div>
+        <div class="card">
+          <div class="card-hd"><div class="card-title" id="rep-card-title">Monatsberichte</div></div>
+          <div class="tw"><table><thead><tr><th>Affiliate</th><th>Sales</th><th>Umsatz</th><th>Provision</th><th>Prov.%</th><th>vs. Vormonat</th><th>Status</th><th>Bericht</th></tr></thead><tbody id="rep-table"></tbody></table></div>
+        </div>
+      </div>
+
+      <!-- REVIEWS -->
+      <div class="view" id="view-reviews">
+        <div class="g3">
+          <div class="metric"><div class="mlbl">Reviews Q2 2026</div><div class="mval">12 geplant</div><div class="mch up">0 erledigt</div></div>
+          <div class="metric"><div class="mlbl">Nächstes Review</div><div class="mval" id="rev-next">—</div><div class="mch neu" id="rev-nextdate">—</div></div>
+          <div class="metric"><div class="mlbl">Rhythmus</div><div class="mval">alle 3 Mo.</div><div class="mch neu">Automatisch</div></div>
+        </div>
+        <div class="card">
+          <div class="card-hd"><div class="card-title">Termine Q2 2026</div><button class="btn btn-p" style="font-size:10px;padding:4px 10px;" onclick="toast('Einladungen werden versendet!')">Alle einladen</button></div>
+          <div id="rev-list"></div>
+        </div>
+      </div>
+
+      <!-- REMINDERS -->
+      <div class="view" id="view-reminders">
+        <div class="g2">
+          <div>
+            <div class="card">
+              <div class="card-hd"><div class="card-title">Erinnerungsregeln</div></div>
+              <div id="rem-rules"></div>
+              <button class="btn" style="margin-top:10px;width:100%;font-size:11px;" onclick="openModal('modal-rule')">+ Neue Regel</button>
+            </div>
+          </div>
+          <div>
+            <div class="card">
+              <div class="card-hd"><div class="card-title">Nächste Erinnerungen</div></div>
+              <div id="rem-preview"></div>
+            </div>
+            <div class="card">
+              <div class="card-hd"><div class="card-title">Kanäle</div></div>
+              <div id="rem-channels" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- UPLOAD / SYNC -->
+      <div class="view" id="view-upload">
+        <div class="g2e">
+          <div class="card">
+            <div class="card-hd"><div class="card-title">🔄 Live Sync — GoAffPro</div></div>
+
+            <div id="sync-token-box" style="margin-bottom:14px;">
+              <div class="form-label">GoAffPro API Token</div>
+              <div style="display:flex;gap:8px;">
+                <input class="form-input" type="password" id="api-token-input" placeholder="Deinen API-Key hier einfügen…" style="flex:1;">
+                <button class="btn btn-p" onclick="saveToken()">Speichern</button>
+              </div>
+              <div style="font-size:10px;color:var(--txt3);margin-top:5px;">Wird nur lokal in deinem Browser gespeichert — nie übertragen.</div>
+            </div>
+
+            <div id="sync-status-box" style="padding:10px 12px;background:var(--bg3);border-radius:var(--r);margin-bottom:12px;font-size:12px;display:none;">
+              <div id="sync-status-text" style="color:var(--txt2);"></div>
+              <div id="sync-last" style="font-size:10px;color:var(--txt3);margin-top:3px;"></div>
+            </div>
+
+            <div style="display:flex;flex-direction:column;gap:7px;">
+              <button class="btn btn-p" onclick="syncGoAffPro()" id="sync-btn">🔄 Jetzt synchronisieren</button>
+              <button class="btn" onclick="syncGoAffPro('affiliates')">Nur Affiliates sync</button>
+              <button class="btn" onclick="syncGoAffPro('sales')">Nur Sales sync</button>
+            </div>
+
+            <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border);font-size:11px;color:var(--txt2);line-height:1.7;">
+              GoAffPro Admin → Settings → <strong>Developer</strong> → Access Tokens → New API Key
+            </div>
+          </div>
+          <div>
+            <div class="card">
+              <div class="card-hd"><div class="card-title">Manueller CSV-Import</div></div>
+              <p style="font-size:11px;color:var(--txt2);margin-bottom:12px;line-height:1.6;">Fallback: GoAffPro Orders-CSV hier hochladen.</p>
+              <div style="border:2px dashed var(--border2);border-radius:var(--rl);padding:24px;text-align:center;cursor:pointer;" onclick="document.getElementById('csv-file').click()">
+                <div style="font-size:12px;font-weight:600;color:var(--txt2);">CSV-Datei hochladen</div>
+                <input type="file" id="csv-file" accept=".csv" style="display:none" onchange="handleCSV(event)">
+              </div>
+              <div id="upload-status" style="margin-top:10px;font-size:11px;"></div>
+            </div>
+            <div class="card">
+              <div class="card-hd"><div class="card-title">Daten-Backup</div></div>
+              <p style="font-size:11px;color:var(--txt2);margin-bottom:10px;">Aktuelle Daten: <strong id="db-info">—</strong></p>
+              <div style="display:flex;flex-direction:column;gap:7px;">
+                <button class="btn" onclick="exportData()">JSON-Backup exportieren</button>
+                <button class="btn" onclick="document.getElementById('import-json').click()">JSON-Backup importieren</button>
+                <input type="file" id="import-json" accept=".json" style="display:none" onchange="importJSON(event)">
+                <button class="btn btn-danger" onclick="if(confirm('Alle Daten zurücksetzen?')){localStorage.removeItem('at_v4');location.reload()}">Zurücksetzen</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SETTINGS -->
+      <div class="view" id="view-settings">
+        <div class="g2e">
+          <div class="card">
+            <div class="card-hd"><div class="card-title">Allgemein</div></div>
+            <div class="form-group"><label class="form-label">Shop-Name</label><input class="form-input" value="Balkonstrom.com" id="set-name"></div>
+            <div class="form-group"><label class="form-label">Währung</label><select class="form-input form-sel"><option>EUR — Euro (€)</option></select></div>
+            <button class="btn btn-p" onclick="toast('Gespeichert!')">Speichern</button>
+          </div>
+          <div class="card">
+            <div class="card-hd"><div class="card-title">Info</div></div>
+            <p style="font-size:11px;color:var(--txt2);line-height:1.7;">Daten: lokal im Browser (localStorage).<br>Nur approved Orders werden gewertet.<br>Quelle: GoAffPro CSV-Export</p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<!-- MODAL: ADD/EDIT SALE -->
+<div class="modal-ov" id="modal-sale">
+  <div class="modal">
+    <div class="modal-hd">
+      <div class="modal-title" id="modal-sale-title">Sale bearbeiten</div>
+      <button class="modal-x" onclick="closeModal('modal-sale')">×</button>
+    </div>
+    <input type="hidden" id="sale-edit-id">
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Datum *</label><input class="form-input" type="date" id="sale-date"></div>
+      <div class="form-group"><label class="form-label">Order-ID</label><input class="form-input" id="sale-orderid" placeholder="z.B. 76920259"></div>
+    </div>
+    <div class="form-group"><label class="form-label">Affiliate *</label>
+      <select class="form-input form-sel" id="sale-affiliate"></select>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Umsatz (€) *</label><input class="form-input" type="number" step="0.01" id="sale-revenue" placeholder="0.00"></div>
+      <div class="form-group"><label class="form-label">Provision (€) *</label><input class="form-input" type="number" step="0.01" id="sale-commission" placeholder="0.00"></div>
+    </div>
+    <div class="form-group"><label class="form-label">Coupon Code</label><input class="form-input" id="sale-coupon" placeholder="Optional"></div>
+    <div class="modal-ft">
+      <button class="btn btn-danger" id="sale-delete-btn" onclick="deleteSale()" style="margin-right:auto;display:none;">Löschen</button>
+      <button class="btn" onclick="closeModal('modal-sale')">Abbrechen</button>
+      <button class="btn btn-p" onclick="saveSale()">Speichern</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: REPORT DETAIL -->
+<div class="modal-ov" id="modal-report">
+  <div class="modal" style="width:560px;">
+    <div class="modal-hd"><div class="modal-title" id="modal-rep-title">Monatsbericht</div><button class="modal-x" onclick="closeModal('modal-report')">×</button></div>
+    <div id="modal-rep-body"></div>
+    <div class="modal-ft">
+      <button class="btn" onclick="toast('PDF exportiert!');closeModal('modal-report')">PDF exportieren</button>
+      <button class="btn btn-p" onclick="toast('Bericht versendet!');closeModal('modal-report')">Per E-Mail versenden</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: AFFILIATE DETAIL -->
+<div class="modal-ov" id="modal-aff">
+  <div class="modal" style="width:520px;">
+    <div class="modal-hd"><div class="modal-title" id="modal-aff-title">Affiliate</div><button class="modal-x" onclick="closeModal('modal-aff')">×</button></div>
+    <div id="modal-aff-body"></div>
+    <div class="modal-ft"><button class="btn btn-p" onclick="closeModal('modal-aff')">Schließen</button></div>
+  </div>
+</div>
+
+<!-- MODAL: RULE -->
+<div class="modal-ov" id="modal-rule">
+  <div class="modal">
+    <div class="modal-hd"><div class="modal-title">Neue Regel</div><button class="modal-x" onclick="closeModal('modal-rule')">×</button></div>
+    <div class="form-group"><label class="form-label">Name *</label><input class="form-input" id="rule-name" placeholder="Regelname"></div>
+    <div class="form-group"><label class="form-label">Beschreibung</label><input class="form-input" id="rule-desc"></div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Typ</label><select class="form-input form-sel" id="rule-type"><option>Monatlich</option><option>Quartalsweise</option><option>Trigger</option><option>Sofort</option></select></div>
+      <div class="form-group"><label class="form-label">Kanal</label><select class="form-input form-sel"><option>E-Mail</option><option>Dashboard</option></select></div>
+    </div>
+    <div class="modal-ft"><button class="btn" onclick="closeModal('modal-rule')">Abbrechen</button><button class="btn btn-p" onclick="addRule()">Hinzufügen</button></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── SEED DATA ─────────────────────────────────────────────────────────────────
+const SEED_AFFILIATES = {"11496345":{"name":"Thor Marquardt","email":"kontakt@energie-solar-erfahrungen.de"},"11584381":{"name":"Alexander Jakob","email":"info@energiemagazin.com"},"19283022":{"name":"Erenja AG & Co. KG","email":"Serafima.Zano@erenja.de"},"19454217":{"name":"Stadtwerke Löbau","email":"Nicole.Kliche@sw-l.de"},"8879118":{"name":"Infranken","email":"p.eigner@infranken.de"},"11859874":{"name":"Heise Medien","email":"lbn@heise.de"},"15333241":{"name":"Handwerkskönig","email":"info@handwerkskoenig.de"},"15143423":{"name":"Jessica Dzikonski","email":"info@erneuerbare-energien-aktuell.de"},"8943290":{"name":"David Wulf","email":"wulf@homeandsmart.de"},"12301585":{"name":"Smart-Home-Fox","email":"lena.albrecht@smart-home-fox.de"},"18001717":{"name":"Valli Von","email":"vallivon223@hotmail.com"},"16789201":{"name":"Jan Pörtner","email":"youtube@janpoertner.de"},"18253213":{"name":"Stadtwerke Kaiserslautern","email":"Dienstleistungen@swk-kl.de"},"6050214":{"name":"Surendar Kumar","email":"samnihal2@gmail.com"},"16907907":{"name":"Sven Friedrich","email":"sv.friedrich@gmail.com"},"4072586":{"name":"Trimexa","email":"info@china-gadgets.de"}};
+
+const SEED_SALES = [{"id":"76920259","date":"2026-04-29","affiliate_id":"11496345","revenue":2128.0,"commission":30.0,"coupon":""},{"id":"76647011","date":"2026-04-25","affiliate_id":"11496345","revenue":1288.9,"commission":30.0,"coupon":""},{"id":"76557770","date":"2026-04-24","affiliate_id":"11496345","revenue":1696.9,"commission":30.0,"coupon":""},{"id":"76526692","date":"2026-04-23","affiliate_id":"11584381","revenue":388.0,"commission":0.0,"coupon":""},{"id":"76524328","date":"2026-04-23","affiliate_id":"11496345","revenue":751.11,"commission":30.0,"coupon":""},{"id":"76506369","date":"2026-04-23","affiliate_id":"11496345","revenue":1314.42,"commission":30.0,"coupon":""},{"id":"76503951","date":"2026-04-23","affiliate_id":"11496345","revenue":3205.9,"commission":30.0,"coupon":""},{"id":"76375290","date":"2026-04-21","affiliate_id":"11496345","revenue":1583.01,"commission":30.0,"coupon":""},{"id":"76202994","date":"2026-04-19","affiliate_id":"11496345","revenue":1937.0,"commission":30.0,"coupon":""},{"id":"76011854","date":"2026-04-16","affiliate_id":"8879118","revenue":1325.31,"commission":75.38,"coupon":""},{"id":"75963059","date":"2026-04-15","affiliate_id":"11496345","revenue":4765.0,"commission":30.0,"coupon":""},{"id":"75843885","date":"2026-04-13","affiliate_id":"11584381","revenue":1567.0,"commission":89.88,"coupon":""},{"id":"75254542","date":"2026-04-03","affiliate_id":"11496345","revenue":1094.0,"commission":30.0,"coupon":""},{"id":"75069310","date":"2026-03-31","affiliate_id":"19454217","revenue":1616.9,"commission":280.0,"coupon":""},{"id":"75046179","date":"2026-03-31","affiliate_id":"11496345","revenue":2486.0,"commission":30.0,"coupon":""},{"id":"74929530","date":"2026-03-29","affiliate_id":"11496345","revenue":2690.19,"commission":30.0,"coupon":""},{"id":"74929526","date":"2026-03-29","affiliate_id":"11496345","revenue":1333.0,"commission":30.0,"coupon":""},{"id":"74843538","date":"2026-03-27","affiliate_id":"11496345","revenue":1608.0,"commission":30.0,"coupon":""},{"id":"74819721","date":"2026-03-27","affiliate_id":"11496345","revenue":2187.9,"commission":30.0,"coupon":""},{"id":"74757545","date":"2026-03-26","affiliate_id":"11496345","revenue":1515.9,"commission":30.0,"coupon":""},{"id":"74717752","date":"2026-03-25","affiliate_id":"11496345","revenue":1137.21,"commission":30.0,"coupon":""},{"id":"74646584","date":"2026-03-24","affiliate_id":"11496345","revenue":1138.0,"commission":30.0,"coupon":""},{"id":"74385391","date":"2026-03-20","affiliate_id":"11496345","revenue":1428.0,"commission":30.0,"coupon":""},{"id":"74238608","date":"2026-03-18","affiliate_id":"11496345","revenue":2641.29,"commission":30.0,"coupon":""},{"id":"74208288","date":"2026-03-18","affiliate_id":"11584381","revenue":1447.0,"commission":82.68,"coupon":""},{"id":"74123972","date":"2026-03-16","affiliate_id":"11496345","revenue":1271.62,"commission":30.0,"coupon":""},{"id":"73948111","date":"2026-03-13","affiliate_id":"11496345","revenue":2007.0,"commission":30.0,"coupon":""},{"id":"73940081","date":"2026-03-13","affiliate_id":"11496345","revenue":1868.0,"commission":30.0,"coupon":""},{"id":"73702429","date":"2026-03-10","affiliate_id":"15143423","revenue":767.94,"commission":34.95,"coupon":""},{"id":"73689549","date":"2026-03-10","affiliate_id":"11496345","revenue":1282.9,"commission":30.0,"coupon":""},{"id":"73666295","date":"2026-03-09","affiliate_id":"11496345","revenue":1321.35,"commission":30.0,"coupon":""},{"id":"73468855","date":"2026-03-06","affiliate_id":"11496345","revenue":1338.0,"commission":30.0,"coupon":""},{"id":"72246411","date":"2026-02-19","affiliate_id":"11496345","revenue":1502.0,"commission":30.0,"coupon":""},{"id":"71773252","date":"2026-02-10","affiliate_id":"11584381","revenue":1222.9,"commission":70.02,"coupon":""},{"id":"71260071","date":"2026-02-01","affiliate_id":"11496345","revenue":1599.6,"commission":30.0,"coupon":""},{"id":"70798229","date":"2026-01-23","affiliate_id":"11496345","revenue":2027.0,"commission":30.0,"coupon":""},{"id":"70715201","date":"2026-01-22","affiliate_id":"11496345","revenue":413.0,"commission":30.0,"coupon":""},{"id":"70471128","date":"2026-01-17","affiliate_id":"11496345","revenue":2169.9,"commission":30.0,"coupon":""},{"id":"70403019","date":"2026-01-16","affiliate_id":"11496345","revenue":1646.9,"commission":30.0,"coupon":""},{"id":"70393012","date":"2026-01-16","affiliate_id":"11496345","revenue":1268.0,"commission":30.0,"coupon":""},{"id":"69858920","date":"2026-01-08","affiliate_id":"11496345","revenue":1478.0,"commission":30.0,"coupon":""},{"id":"69848113","date":"2026-01-08","affiliate_id":"11496345","revenue":1478.0,"commission":30.0,"coupon":""},{"id":"69250792","date":"2025-12-26","affiliate_id":"11496345","revenue":1576.0,"commission":30.0,"coupon":""},{"id":"68867475","date":"2025-12-19","affiliate_id":"11584381","revenue":768.0,"commission":46.08,"coupon":""},{"id":"68864889","date":"2025-12-19","affiliate_id":"11584381","revenue":1458.9,"commission":83.34,"coupon":""},{"id":"68547463","date":"2025-12-13","affiliate_id":"11496345","revenue":1768.0,"commission":30.0,"coupon":""},{"id":"68146021","date":"2025-12-06","affiliate_id":"11496345","revenue":1114.0,"commission":30.0,"coupon":""},{"id":"67699969","date":"2025-11-30","affiliate_id":"11859874","revenue":1124.9,"commission":30.0,"coupon":""},{"id":"67621175","date":"2025-11-29","affiliate_id":"11859874","revenue":1959.21,"commission":30.0,"coupon":""},{"id":"67498791","date":"2025-11-28","affiliate_id":"11859874","revenue":1112.4,"commission":30.0,"coupon":""},{"id":"67437449","date":"2025-11-28","affiliate_id":"11496345","revenue":1839.0,"commission":30.0,"coupon":""},{"id":"67404656","date":"2025-11-28","affiliate_id":"11496345","revenue":1468.0,"commission":30.0,"coupon":""},{"id":"66853004","date":"2025-11-21","affiliate_id":"11859874","revenue":1179.6,"commission":30.0,"coupon":""},{"id":"66271507","date":"2025-11-12","affiliate_id":"8943290","revenue":1644.0,"commission":94.5,"coupon":""},{"id":"66069943","date":"2025-11-08","affiliate_id":"11584381","revenue":1586.0,"commission":95.16,"coupon":""},{"id":"65116785","date":"2025-10-22","affiliate_id":"18001717","revenue":1824.57,"commission":30.0,"coupon":""},{"id":"64931925","date":"2025-10-18","affiliate_id":"18001717","revenue":1245.36,"commission":30.0,"coupon":""},{"id":"64873398","date":"2025-10-17","affiliate_id":"11584381","revenue":2213.64,"commission":125.1,"coupon":""},{"id":"63753538","date":"2025-09-26","affiliate_id":"11584381","revenue":2054.4,"commission":100.38,"coupon":""},{"id":"63729423","date":"2025-09-25","affiliate_id":"18001717","revenue":2199.0,"commission":30.0,"coupon":""},{"id":"63600095","date":"2025-09-23","affiliate_id":"11584381","revenue":3264.4,"commission":154.88,"coupon":""},{"id":"63597403","date":"2025-09-23","affiliate_id":"11584381","revenue":1558.95,"commission":89.4,"coupon":""},{"id":"63573204","date":"2025-09-22","affiliate_id":"18001717","revenue":1887.0,"commission":30.0,"coupon":""},{"id":"63270042","date":"2025-09-17","affiliate_id":"18001717","revenue":636.0,"commission":30.0,"coupon":""},{"id":"63259706","date":"2025-09-16","affiliate_id":"11584381","revenue":3104.31,"commission":181.7,"coupon":""},{"id":"63151446","date":"2025-09-14","affiliate_id":"15333241","revenue":2557.0,"commission":149.28,"coupon":""},{"id":"63143532","date":"2025-09-14","affiliate_id":"11584381","revenue":90.9,"commission":5.04,"coupon":""},{"id":"63091570","date":"2025-09-13","affiliate_id":"11496345","revenue":1268.0,"commission":30.0,"coupon":""},{"id":"62942541","date":"2025-09-10","affiliate_id":"11496345","revenue":2762.57,"commission":30.0,"coupon":""},{"id":"62852991","date":"2025-09-08","affiliate_id":"18001717","revenue":619.0,"commission":30.0,"coupon":""},{"id":"62724949","date":"2025-09-05","affiliate_id":"18001717","revenue":634.0,"commission":30.0,"coupon":""},{"id":"62525421","date":"2025-09-02","affiliate_id":"18001717","revenue":779.6,"commission":30.0,"coupon":""},{"id":"62501550","date":"2025-09-02","affiliate_id":"11584381","revenue":1647.06,"commission":94.68,"coupon":""},{"id":"62453560","date":"2025-09-01","affiliate_id":"11584381","revenue":589.0,"commission":35.34,"coupon":""},{"id":"62345379","date":"2025-08-30","affiliate_id":"18253213","revenue":1096.62,"commission":30.0,"coupon":""},{"id":"62344878","date":"2025-08-30","affiliate_id":"18253213","revenue":1068.0,"commission":30.0,"coupon":""},{"id":"62335081","date":"2025-08-30","affiliate_id":"18001717","revenue":635.0,"commission":30.0,"coupon":""},{"id":"62212049","date":"2025-08-28","affiliate_id":"8943290","revenue":2163.0,"commission":125.64,"coupon":""},{"id":"62172977","date":"2025-08-27","affiliate_id":"18001717","revenue":619.0,"commission":30.0,"coupon":""},{"id":"62024628","date":"2025-08-24","affiliate_id":"18001717","revenue":639.0,"commission":30.0,"coupon":""},{"id":"61935101","date":"2025-08-22","affiliate_id":"18001717","revenue":3059.0,"commission":30.0,"coupon":""},{"id":"61746069","date":"2025-08-19","affiliate_id":"18001717","revenue":661.0,"commission":30.0,"coupon":""},{"id":"61688876","date":"2025-08-18","affiliate_id":"11584381","revenue":619.0,"commission":37.14,"coupon":""},{"id":"61604374","date":"2025-08-16","affiliate_id":"18001717","revenue":619.0,"commission":30.0,"coupon":""},{"id":"61540245","date":"2025-08-15","affiliate_id":"11584381","revenue":719.0,"commission":43.14,"coupon":""},{"id":"61456884","date":"2025-08-14","affiliate_id":"18001717","revenue":807.6,"commission":30.0,"coupon":""},{"id":"61414988","date":"2025-08-13","affiliate_id":"11584381","revenue":128.67,"commission":7.31,"coupon":""},{"id":"61389946","date":"2025-08-12","affiliate_id":"11496345","revenue":2550.9,"commission":30.0,"coupon":""},{"id":"61332011","date":"2025-08-11","affiliate_id":"11584381","revenue":523.0,"commission":28.44,"coupon":""},{"id":"61297772","date":"2025-08-10","affiliate_id":"18001717","revenue":595.9,"commission":30.0,"coupon":""},{"id":"61202812","date":"2025-08-08","affiliate_id":"18001717","revenue":166.9,"commission":30.0,"coupon":""},{"id":"61192845","date":"2025-08-08","affiliate_id":"11496345","revenue":1454.9,"commission":30.0,"coupon":""},{"id":"61075853","date":"2025-08-05","affiliate_id":"18001717","revenue":1079.0,"commission":30.0,"coupon":""},{"id":"60956025","date":"2025-08-03","affiliate_id":"11584381","revenue":765.0,"commission":45.9,"coupon":""},{"id":"60939083","date":"2025-08-03","affiliate_id":"15333241","revenue":1694.0,"commission":95.7,"coupon":""},{"id":"60847958","date":"2025-08-01","affiliate_id":"11584381","revenue":3425.37,"commission":199.17,"coupon":""},{"id":"60620663","date":"2025-07-28","affiliate_id":"18001717","revenue":460.0,"commission":30.0,"coupon":""},{"id":"60428562","date":"2025-07-25","affiliate_id":"11496345","revenue":1798.0,"commission":30.0,"coupon":""},{"id":"60358058","date":"2025-07-24","affiliate_id":"11584381","revenue":769.0,"commission":46.14,"coupon":""},{"id":"60285032","date":"2025-07-22","affiliate_id":"11584381","revenue":2092.0,"commission":121.98,"coupon":""},{"id":"60167421","date":"2025-07-20","affiliate_id":"11584381","revenue":1508.0,"commission":86.34,"coupon":""},{"id":"59873467","date":"2025-07-18","affiliate_id":"11584381","revenue":1049.0,"commission":62.94,"coupon":""},{"id":"59818271","date":"2025-07-17","affiliate_id":"11496345","revenue":1163.0,"commission":30.0,"coupon":""},{"id":"59795891","date":"2025-07-16","affiliate_id":"11584381","revenue":543.0,"commission":29.64,"coupon":""},{"id":"59603361","date":"2025-07-12","affiliate_id":"11584381","revenue":1019.0,"commission":61.14,"coupon":""},{"id":"59333979","date":"2025-07-10","affiliate_id":"8943290","revenue":1860.9,"commission":107.1,"coupon":""},{"id":"59258182","date":"2025-07-09","affiliate_id":"11496345","revenue":62.9,"commission":30.0,"coupon":""},{"id":"59149090","date":"2025-07-07","affiliate_id":"11584381","revenue":1758.0,"commission":101.34,"coupon":""},{"id":"59027180","date":"2025-07-05","affiliate_id":"11584381","revenue":295.9,"commission":13.8,"coupon":""},{"id":"58949370","date":"2025-07-03","affiliate_id":"11584381","revenue":343.0,"commission":17.64,"coupon":""},{"id":"58754968","date":"2025-06-30","affiliate_id":"11496345","revenue":3511.0,"commission":30.0,"coupon":""},{"id":"58748870","date":"2025-06-30","affiliate_id":"11584381","revenue":755.0,"commission":45.3,"coupon":""},{"id":"58721108","date":"2025-06-29","affiliate_id":"11496345","revenue":1089.0,"commission":30.0,"coupon":""},{"id":"58715612","date":"2025-06-29","affiliate_id":"11584381","revenue":1069.0,"commission":64.14,"coupon":""},{"id":"58666132","date":"2025-06-28","affiliate_id":"18001717","revenue":525.0,"commission":30.0,"coupon":""},{"id":"58232029","date":"2025-06-25","affiliate_id":"11584381","revenue":1564.0,"commission":89.7,"coupon":""},{"id":"58123298","date":"2025-06-22","affiliate_id":"11584381","revenue":875.0,"commission":52.5,"coupon":""},{"id":"58089358","date":"2025-06-22","affiliate_id":"11584381","revenue":464.0,"commission":27.84,"coupon":""},{"id":"58032484","date":"2025-06-20","affiliate_id":"11496345","revenue":670.0,"commission":30.0,"coupon":""},{"id":"57978190","date":"2025-06-19","affiliate_id":"11584381","revenue":699.0,"commission":41.94,"coupon":""},{"id":"57940351","date":"2025-06-18","affiliate_id":"11496345","revenue":1028.9,"commission":30.0,"coupon":""},{"id":"57869141","date":"2025-06-17","affiliate_id":"11584381","revenue":623.0,"commission":34.44,"coupon":""},{"id":"57843564","date":"2025-06-17","affiliate_id":"11496345","revenue":707.0,"commission":30.0,"coupon":""},{"id":"57731655","date":"2025-06-14","affiliate_id":"11584381","revenue":679.0,"commission":37.8,"coupon":""},{"id":"57647616","date":"2025-06-12","affiliate_id":"11496345","revenue":1648.9,"commission":30.0,"coupon":""},{"id":"57148265","date":"2025-06-07","affiliate_id":"11496345","revenue":75.9,"commission":30.0,"coupon":""},{"id":"57072662","date":"2025-06-06","affiliate_id":"11496345","revenue":1825.9,"commission":30.0,"coupon":""},{"id":"56970976","date":"2025-06-04","affiliate_id":"15333241","revenue":899.0,"commission":53.94,"coupon":""},{"id":"56776369","date":"2025-05-31","affiliate_id":"11584381","revenue":1243.0,"commission":71.64,"coupon":""},{"id":"56770590","date":"2025-05-31","affiliate_id":"11584381","revenue":558.0,"commission":30.54,"coupon":""},{"id":"56556202","date":"2025-05-27","affiliate_id":"11496345","revenue":749.0,"commission":30.0,"coupon":""},{"id":"56474342","date":"2025-05-26","affiliate_id":"11496345","revenue":36.9,"commission":30.0,"coupon":""},{"id":"56150413","date":"2025-05-19","affiliate_id":"11584381","revenue":753.0,"commission":41.04,"coupon":""},{"id":"56138687","date":"2025-05-19","affiliate_id":"11584381","revenue":2835.38,"commission":166.17,"coupon":""},{"id":"56002597","date":"2025-05-16","affiliate_id":"11584381","revenue":543.0,"commission":29.64,"coupon":""},{"id":"55985825","date":"2025-05-16","affiliate_id":"16907907","revenue":3813.18,"commission":30.0,"coupon":""},{"id":"55849029","date":"2025-05-13","affiliate_id":"11584381","revenue":1437.9,"commission":82.92,"coupon":""},{"id":"55790133","date":"2025-05-12","affiliate_id":"11584381","revenue":1709.56,"commission":98.02,"coupon":""},{"id":"55583636","date":"2025-05-08","affiliate_id":"11584381","revenue":699.0,"commission":41.94,"coupon":""},{"id":"55252458","date":"2025-05-01","affiliate_id":"4072586","revenue":839.0,"commission":30.0,"coupon":""}];
+
+const SEED_RULES = [
+  {id:1,name:"Monatsbericht — 3 Tage vorher",desc:"Erinnerung am 28. jeden Monats",type:"Monatlich",enabled:true},
+  {id:2,name:"Quartals-Review — 14 Tage vorher",desc:"Frühzeitige Terminplanung",type:"Quartalsweise",enabled:true},
+  {id:3,name:"Quartals-Review — 3 Tage vorher",desc:"Finale Erinnerung + Agenda",type:"Quartalsweise",enabled:true},
+  {id:4,name:"Conversion-Drop-Alarm",desc:"Revenue >30% unter Vormonat",type:"Sofort",enabled:true},
+];
+
+// ── DB ────────────────────────────────────────────────────────────────────────
+const SK = 'at_v4';
+function defaultDB(){ return { affiliates: JSON.parse(JSON.stringify(SEED_AFFILIATES)), sales: JSON.parse(JSON.stringify(SEED_SALES)), rules: JSON.parse(JSON.stringify(SEED_RULES)), nextId: 90000 }; }
+function loadDB(){
+  try{
+    const d=localStorage.getItem(SK);
+    const db = d ? JSON.parse(d) : defaultDB();
+    // Always ensure seed sales are present (merge without duplicates)
+    const existingIds = new Set(db.sales.map(s=>s.id));
+    let added = 0;
+    SEED_SALES.forEach(s => {
+      if(!existingIds.has(s.id)){ db.sales.push(s); added++; }
+    });
+    if(added > 0) { localStorage.setItem(SK, JSON.stringify(db)); }
+    return db;
+  }catch{ return defaultDB(); }
+}
+function saveDB(){ localStorage.setItem(SK, JSON.stringify(DB)); }
+let DB = loadDB();
+
+// ── COMPUTED ──────────────────────────────────────────────────────────────────
+function computeAlltime(){
+  const at={};
+  DB.sales.forEach(s=>{
+    if(!at[s.affiliate_id]) at[s.affiliate_id]={orders:0,revenue:0,commission:0};
+    at[s.affiliate_id].orders++; at[s.affiliate_id].revenue+=s.revenue; at[s.affiliate_id].commission+=s.commission;
+  });
+  return at;
+}
+function computeMonthly(){
+  const mo={};
+  DB.sales.forEach(s=>{
+    const m=s.date.slice(0,7);
+    if(!mo[m]) mo[m]={};
+    if(!mo[m][s.affiliate_id]) mo[m][s.affiliate_id]={orders:0,revenue:0,commission:0};
+    mo[m][s.affiliate_id].orders++; mo[m][s.affiliate_id].revenue+=s.revenue; mo[m][s.affiliate_id].commission+=s.commission;
+  });
+  return mo;
+}
+function computeMonthlyTotals(mo){
+  const t={};
+  Object.keys(mo).forEach(m=>{
+    t[m]={revenue:0,commission:0,orders:0};
+    Object.values(mo[m]).forEach(s=>{ t[m].revenue+=s.revenue; t[m].commission+=s.commission; t[m].orders+=s.orders; });
+    t[m].revenue=Math.round(t[m].revenue*100)/100;
+    t[m].commission=Math.round(t[m].commission*100)/100;
+  });
+  return t;
+}
+function computeFirstMonths(mo){
+  const fm={};
+  Object.keys(mo).sort().forEach(m=>Object.keys(mo[m]).forEach(aid=>{ if(!fm[aid]) fm[aid]=m; }));
+  return fm;
+}
+
+// ── HELPERS ───────────────────────────────────────────────────────────────────
+const fE=v=>'€'+Math.round(v).toLocaleString('de-DE');
+const fE2=v=>'€'+(Math.round(v*100)/100).toFixed(2).replace('.',',');
+const provPct=(c,r)=>r?((c/r)*100).toFixed(1)+'%':'—';
+const avgOrd=(r,o)=>o?fE(r/o):'—';
+const MONTH_NAMES=['','Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
+// FIXED: short label just "Apr 26" → full label "April 2026" etc.
+function monthLabel(m, full=false){
+  const [y,mo]=m.split('-');
+  const names_full=['','Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
+  const names_short=MONTH_NAMES;
+  return full ? names_full[parseInt(mo)]+' '+y : names_short[parseInt(mo)]+' '+y.slice(2);
+}
+// Dropdown label: "April 2026" (full year, full month name)
+function monthDropdown(m){
+  const [y,mo]=m.split('-');
+  const names=['','Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
+  return names[parseInt(mo)]+' '+y;
+}
+
+const COLORS=['#1A65B5','#4E48B0','#0F6E56','#B87318','#B03030','#357A0E','#1D9E75','#D85A30','#888780','#D4537E','#639922','#378ADD'];
+const colorMap={};
+function getColor(id){ if(!colorMap[id]){ const keys=Object.keys(SEED_AFFILIATES); colorMap[id]=COLORS[keys.indexOf(id)%COLORS.length]; } return colorMap[id]; }
+function getInitials(name){ return (name||'?').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase(); }
+function avStyle(id){ const c=getColor(id); return `background:${c}18;color:${c};`; }
+
+function toast(msg){ const el=document.getElementById('toast'); el.textContent=msg; el.classList.add('show'); setTimeout(()=>el.classList.remove('show'),2600); }
+function openModal(id){ document.getElementById(id).classList.add('open'); }
+function closeModal(id){ document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.modal-ov').forEach(o=>o.addEventListener('click',e=>{ if(e.target===o) o.classList.remove('open'); }));
+
+// ── NAVIGATION ────────────────────────────────────────────────────────────────
+const TITLES={dashboard:'Dashboard',pipeline:'Affiliate Pipeline',nosales:'Affiliates ohne Sales',alltime:'All-Time Übersicht',monthly:'Monatsübersicht',sales:'Alle Sales',affiliates:'Affiliates',reports:'Monatsberichte',reviews:'Quartals-Reviews',reminders:'Erinnerungen',upload:'CSV importieren',settings:'Einstellungen'};
+const TOPBTNS={dashboard:'+ Sale hinzufügen',pipeline:'',nosales:'',alltime:'',monthly:'',sales:'+ Sale hinzufügen',affiliates:'',reports:'',reviews:'',reminders:'Speichern',upload:'',settings:''};
+
+function navigate(v){
+  document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(x=>x.classList.remove('active'));
+  document.getElementById('view-'+v)?.classList.add('active');
+  document.querySelector(`[data-view="${v}"]`)?.classList.add('active');
+  document.getElementById('page-title').textContent=TITLES[v]||v;
+  const btn=document.getElementById('top-btn');
+  if(TOPBTNS[v]){ btn.textContent=TOPBTNS[v]; btn.style.display=''; } else btn.style.display='none';
+  renderView(v);
+}
+document.querySelectorAll('.nav-item').forEach(item=>item.addEventListener('click',()=>navigate(item.dataset.view)));
+function handleTopBtn(){ const a=document.querySelector('.nav-item.active'); const v=a?a.dataset.view:''; if(v==='dashboard'||v==='sales') openAddSale(); else if(v==='reminders'){ saveDB(); toast('Gespeichert!'); } }
+
+// ── CHART MANAGER ─────────────────────────────────────────────────────────────
+const charts={};
+function mkChart(id,type,labels,datasets,opts={}){
+  if(charts[id]){ charts[id].destroy(); delete charts[id]; }
+  const ctx=document.getElementById(id)?.getContext('2d'); if(!ctx) return;
+  charts[id]=new Chart(ctx,{type,data:{labels,datasets},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{mode:'index',intersect:false}},...opts}});
+}
+
+// ── RENDER VIEWS ──────────────────────────────────────────────────────────────
+function renderView(v){
+  const at=computeAlltime(), mo=computeMonthly(), mt=computeMonthlyTotals(mo);
+  if(v==='dashboard') renderDash();
+  else if(v==='pipeline') renderPipeline(at,mo,mt);
+  else if(v==='nosales') renderNosales(at);
+  else if(v==='alltime') renderAlltime(at,mo,mt);
+  else if(v==='monthly') renderMonthlyInit(mo,mt);
+  else if(v==='sales') renderSales();
+  else if(v==='affiliates') renderAffiliates(at,mo);
+  else if(v==='reports') renderReportsInit(mo,mt);
+  else if(v==='reviews') renderReviews(at);
+  else if(v==='reminders') renderReminders();
+  else if(v==='upload'){ document.getElementById('db-info').textContent=`${DB.sales.length} Sales, ${Object.keys(DB.affiliates).length} Affiliates`; }
+}
+
+// DASHBOARD
+// ── PERIOD FILTER ─────────────────────────────────────────────────────────────
+let currentPeriod = 'all';
+let customFrom = null, customTo = null;
+
+function getPeriodRange(period) {
+  const now = new Date();
+  const today = now.toISOString().slice(0,10);
+  const ymd = d => d.toISOString().slice(0,10);
+
+  if(period === 'today') return { from: today, to: today, label: 'Heute' };
+  if(period === 'yesterday') {
+    const y = new Date(now); y.setDate(y.getDate()-1);
+    return { from: ymd(y), to: ymd(y), label: 'Gestern' };
+  }
+  if(period === 'week') {
+    const mon = new Date(now); mon.setDate(now.getDate() - ((now.getDay()+6)%7));
+    return { from: ymd(mon), to: today, label: 'Diese Woche' };
+  }
+  if(period === 'lastweek') {
+    const mon = new Date(now); mon.setDate(now.getDate() - ((now.getDay()+6)%7) - 7);
+    const sun = new Date(mon); sun.setDate(mon.getDate()+6);
+    return { from: ymd(mon), to: ymd(sun), label: 'Letzte Woche' };
+  }
+  if(period === 'month') {
+    const from = new Date(now.getFullYear(), now.getMonth(), 1);
+    return { from: ymd(from), to: today, label: 'Dieser Monat' };
+  }
+  if(period === 'lastmonth') {
+    const from = new Date(now.getFullYear(), now.getMonth()-1, 1);
+    const to   = new Date(now.getFullYear(), now.getMonth(), 0);
+    return { from: ymd(from), to: ymd(to), label: 'Letzter Monat' };
+  }
+  if(period === 'quarter') {
+    const q = Math.floor(now.getMonth()/3);
+    const from = new Date(now.getFullYear(), q*3, 1);
+    return { from: ymd(from), to: today, label: 'Dieses Quartal' };
+  }
+  if(period === 'year') {
+    return { from: `${now.getFullYear()}-01-01`, to: today, label: `${now.getFullYear()}` };
+  }
+  if(period === 'custom' && customFrom && customTo) {
+    return { from: customFrom, to: customTo, label: `${customFrom} – ${customTo}` };
+  }
+  return { from: null, to: null, label: 'Gesamt (All-Time)' };
+}
+
+function filterSalesByPeriod(period) {
+  const { from, to } = getPeriodRange(period);
+  if(!from) return DB.sales;
+  return DB.sales.filter(s => s.date >= from && s.date <= to);
+}
+
+function computeAlltimeFromSales(sales) {
+  const at = {};
+  sales.forEach(s => {
+    if(!at[s.affiliate_id]) at[s.affiliate_id] = {orders:0,revenue:0,commission:0};
+    at[s.affiliate_id].orders++;
+    at[s.affiliate_id].revenue += s.revenue;
+    at[s.affiliate_id].commission += s.commission;
+  });
+  return at;
+}
+
+function setPeriod(period, btn) {
+  currentPeriod = period;
+  document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const customRange = document.getElementById('custom-date-range');
+  if(period === 'custom') {
+    customRange.style.display = 'flex';
+    // set defaults if empty
+    const now = new Date();
+    if(!document.getElementById('custom-from').value)
+      document.getElementById('custom-from').value = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0,10);
+    if(!document.getElementById('custom-to').value)
+      document.getElementById('custom-to').value = now.toISOString().slice(0,10);
+    customFrom = document.getElementById('custom-from').value;
+    customTo   = document.getElementById('custom-to').value;
+  } else {
+    customRange.style.display = 'none';
+  }
+  renderDash();
+}
+
+function applyCustomPeriod() {
+  customFrom = document.getElementById('custom-from').value;
+  customTo   = document.getElementById('custom-to').value;
+  if(customFrom && customTo) renderDash();
+}
+
+// ── CHART GROUPING ────────────────────────────────────────────────────────────
+function getChartData(sales, period) {
+  const { from, to } = getPeriodRange(period);
+  // Decide granularity
+  let granularity = 'month';
+  if(from && to) {
+    const days = Math.ceil((new Date(to) - new Date(from)) / 86400000);
+    if(days <= 1)  granularity = 'hour';
+    else if(days <= 14) granularity = 'day';
+    else if(days <= 90) granularity = 'week';
+    else granularity = 'month';
+  }
+
+  const buckets = {};
+  sales.forEach(s => {
+    let key;
+    const d = new Date(s.date);
+    if(granularity === 'hour') key = s.date;
+    else if(granularity === 'day') key = s.date;
+    else if(granularity === 'week') {
+      const mon = new Date(d); mon.setDate(d.getDate() - ((d.getDay()+6)%7));
+      key = mon.toISOString().slice(0,10);
+    } else key = s.date.slice(0,7);
+
+    if(!buckets[key]) buckets[key] = {revenue:0, commission:0, orders:0};
+    buckets[key].revenue    += s.revenue;
+    buckets[key].commission += s.commission;
+    buckets[key].orders++;
+  });
+
+  const sorted = Object.keys(buckets).sort();
+  const labels = sorted.map(k => {
+    if(granularity === 'month') return monthLabel(k);
+    if(granularity === 'week')  return 'KW '+getWeekNum(new Date(k));
+    return new Date(k).toLocaleDateString('de-DE', {day:'numeric',month:'short'});
+  });
+  return { labels, data: sorted.map(k => buckets[k]), granularity };
+}
+
+function getWeekNum(d) {
+  const jan1 = new Date(d.getFullYear(),0,1);
+  return Math.ceil(((d - jan1) / 86400000 + jan1.getDay() + 1) / 7);
+}
+
+function renderDash() {
+  const sales = filterSalesByPeriod(currentPeriod);
+  const at    = computeAlltimeFromSales(sales);
+  const { label } = getPeriodRange(currentPeriod);
+
+  const allAffs  = Object.keys(DB.affiliates);
+  const withSales = Object.keys(computeAlltime()); // all-time for activation rate
+  const noSales   = allAffs.filter(id => !computeAlltime()[id]);
+  const totalRev  = Object.values(at).reduce((s,x)=>s+x.revenue,0);
+  const totalCom  = Object.values(at).reduce((s,x)=>s+x.commission,0);
+  const totalOrd  = Object.values(at).reduce((s,x)=>s+x.orders,0);
+
+  // Update period label
+  const lbl = document.getElementById('period-label');
+  if(lbl) lbl.textContent = label;
+
+  document.getElementById('d-rev').textContent = fE(totalRev);
+  document.getElementById('d-rev-lbl').textContent = label;
+  document.getElementById('d-com').textContent = fE2(totalCom);
+  document.getElementById('d-comr').textContent = provPct(totalCom,totalRev)+' Prov.-Rate';
+  document.getElementById('d-ord').textContent = totalOrd;
+  document.getElementById('d-aov').textContent = totalOrd ? 'Ø '+fE(totalRev/totalOrd)+'/Sale' : '—';
+  document.getElementById('d-aff').textContent = withSales.length+' / '+allAffs.length;
+
+  const actRate = Math.round(withSales.length/allAffs.length*100);
+  document.getElementById('d-nosales-val').textContent = noSales.length;
+  document.getElementById('d-actrate').textContent = actRate+'%';
+  document.getElementById('d-actrate-ch').textContent = actRate>=70?'Gut':actRate>=50?'Ausbaufähig':'Kritisch';
+  document.getElementById('d-actrate-ch').className = 'mch '+(actRate>=70?'up':actRate>=50?'neu':'dn');
+
+  // Top affiliates
+  const sorted = Object.entries(at).sort((a,b)=>b[1].revenue-a[1].revenue);
+  document.getElementById('d-top-title').textContent = `Top Affiliates — ${label}`;
+  document.getElementById('d-top').innerHTML = sorted.length ? sorted.slice(0,6).map(([id,s],i)=>`<tr>
+    <td style="color:var(--txt2);font-weight:700;">${i+1}</td>
+    <td><div class="pc"><div class="av" style="${avStyle(id)}">${getInitials(DB.affiliates[id]?.name||id)}</div><span style="font-weight:600;">${DB.affiliates[id]?.name||id}</span></div></td>
+    <td>${s.orders}</td><td><strong>${fE(s.revenue)}</strong></td><td>${fE2(s.commission)}</td><td>${provPct(s.commission,s.revenue)}</td>
+  </tr>`).join('') : '<tr><td colspan="6" style="text-align:center;color:var(--txt2);padding:16px;">Keine Sales in diesem Zeitraum</td></tr>';
+
+  // Chart
+  const { labels: chartLabels, data: chartData, granularity } = getChartData(sales, currentPeriod);
+  const chartTitle = granularity==='day'?'Täglicher Umsatz':granularity==='week'?'Wöchentlicher Umsatz':'Monatlicher Umsatz';
+  document.getElementById('d-chart-title').textContent = chartTitle;
+
+  if(chartLabels.length > 0) {
+    mkChart('d-chart','bar',chartLabels,[
+      {label:'Umsatz',data:chartData.map(d=>d.revenue),backgroundColor:'#1A65B5',borderRadius:3,yAxisID:'y'},
+      {label:'Provision',data:chartData.map(d=>d.commission),backgroundColor:'#357A0E',borderRadius:3,yAxisID:'y1'}
+    ],{scales:{x:{ticks:{font:{size:9},color:'#888'},grid:{display:false}},y:{position:'left',ticks:{font:{size:9},color:'#888',callback:v=>'€'+Math.round(v/1000)+'K'},grid:{color:'rgba(0,0,0,0.04)'}},y1:{position:'right',ticks:{font:{size:9},color:'#357A0E'},grid:{display:false}}}});
+  } else {
+    if(charts['d-chart']){charts['d-chart'].destroy();delete charts['d-chart'];}
+  }
+
+  // Bars
+  const totalRevForBars = totalRev || 1;
+  document.getElementById('d-bars').innerHTML = sorted.length ? sorted.map(([id,s])=>
+    `<div class="bar-row"><div class="bar-lbl">${DB.affiliates[id]?.name||id}</div><div class="bar-track"><div class="bar-fill" style="width:${(s.revenue/totalRevForBars*100).toFixed(1)}%;background:${getColor(id)};"></div></div><div class="bar-val">${fE(s.revenue)}</div></div>`
+  ).join('') : '<div style="color:var(--txt2);font-size:12px;padding:8px 0;">Keine Sales in diesem Zeitraum</div>';
+
+  // Period details table
+  document.getElementById('d-period-card-title').textContent = `Details — ${label}`;
+  document.getElementById('d-lastmonth').innerHTML = sorted.length ? sorted.map(([id,s])=>`<tr>
+    <td><div class="pc"><div class="av" style="${avStyle(id)}">${getInitials(DB.affiliates[id]?.name||id)}</div>${DB.affiliates[id]?.name||id}</div></td>
+    <td>${s.orders}</td><td><strong>${fE(s.revenue)}</strong></td><td>${fE2(s.commission)}</td>
+  </tr>`).join('') : '<tr><td colspan="4" style="text-align:center;color:var(--txt2);padding:16px;">Keine Sales</td></tr>';
+}
+
+// ALL-TIME
+function renderAlltime(at,mo,mt){
+  const totalRev=Object.values(at).reduce((s,x)=>s+x.revenue,0);
+  const totalCom=Object.values(at).reduce((s,x)=>s+x.commission,0);
+  const totalOrd=Object.values(at).reduce((s,x)=>s+x.orders,0);
+  document.getElementById('at-rev').textContent=fE(totalRev);
+  document.getElementById('at-com').textContent=fE2(totalCom);
+  document.getElementById('at-comr').textContent=provPct(totalCom,totalRev)+' Rate';
+  document.getElementById('at-avg').textContent=fE(totalRev/totalOrd);
+  document.getElementById('at-ord').textContent=totalOrd+' Sales total';
+  const fm=computeFirstMonths(mo);
+  const sorted=Object.entries(at).sort((a,b)=>b[1].revenue-a[1].revenue);
+  document.getElementById('at-table').innerHTML=sorted.map(([id,s],i)=>`<tr>
+    <td style="color:var(--txt2);font-weight:700;">${i+1}</td>
+    <td><div class="pc"><div class="av" style="${avStyle(id)}">${getInitials(DB.affiliates[id]?.name||id)}</div><div><div style="font-weight:600;">${DB.affiliates[id]?.name||id}</div><div style="font-size:9px;color:var(--txt2);">ID: ${id}</div></div></div></td>
+    <td style="font-size:10px;color:var(--txt2);">${DB.affiliates[id]?.email||'—'}</td>
+    <td>${s.orders}</td><td><strong>${fE(s.revenue)}</strong></td><td>${fE2(s.commission)}</td>
+    <td>${provPct(s.commission,s.revenue)}</td><td>${avgOrd(s.revenue,s.orders)}</td>
+    <td style="font-size:10px;color:var(--txt2);">${fm[id]?monthDropdown(fm[id]):'—'}</td>
+  </tr>`).join('');
+  const months=Object.keys(mt).sort();
+  mkChart('at-chart','bar',months.map(m=>monthLabel(m)),[
+    {label:'Umsatz',data:months.map(m=>mt[m].revenue),backgroundColor:'#1A65B5',borderRadius:3,yAxisID:'y'},
+    {label:'Provision',data:months.map(m=>mt[m].commission),backgroundColor:'#357A0E',borderRadius:3,yAxisID:'y1'}
+  ],{scales:{x:{ticks:{font:{size:9},color:'#888'},grid:{display:false}},y:{position:'left',ticks:{font:{size:9},color:'#888',callback:v=>'€'+Math.round(v/1000)+'K'},grid:{color:'rgba(0,0,0,0.04)'}},y1:{position:'right',ticks:{font:{size:9},color:'#357A0E'},grid:{display:false}}}});
+}
+
+// MONTHLY
+function renderMonthlyInit(mo,mt){
+  const sel=document.getElementById('mo-sel');
+  const months=Object.keys(mt).sort().reverse();
+  // FIXED: use monthDropdown for full "April 2026" format
+  sel.innerHTML=months.map(m=>`<option value="${m}">${monthDropdown(m)}</option>`).join('');
+  renderMonthly();
+}
+function renderMonthly(){
+  const at=computeAlltime(), mo=computeMonthly(), mt=computeMonthlyTotals(mo);
+  const m=document.getElementById('mo-sel')?.value; if(!m) return;
+  const allMonths=Object.keys(mt).sort();
+  const prev=allMonths.filter(x=>x<m).pop();
+  const t=mt[m]||{revenue:0,commission:0,orders:0};
+  const prevT=prev?mt[prev]:{revenue:0};
+  const chg=prevT.revenue?((t.revenue-prevT.revenue)/prevT.revenue*100).toFixed(1):null;
+  document.getElementById('mo-rev').textContent=fE(t.revenue);
+  document.getElementById('mo-revch').className='mch '+(chg>0?'up':chg<0?'dn':'neu');
+  document.getElementById('mo-revch').textContent=chg?((chg>0?'+':'')+chg+'% vs. '+monthDropdown(prev)):'Erstes Monat';
+  document.getElementById('mo-com').textContent=fE2(t.commission);
+  document.getElementById('mo-comr').textContent=provPct(t.commission,t.revenue)+' Rate';
+  document.getElementById('mo-ord').textContent=t.orders;
+  document.getElementById('mo-card-title').textContent='Ergebnisse — '+monthDropdown(m);
+  const affData=mo[m]||{};
+  const prevData=prev&&mo[prev]?mo[prev]:{};
+  const sorted=Object.entries(affData).sort((a,b)=>b[1].revenue-a[1].revenue);
+  document.getElementById('mo-table').innerHTML=sorted.map(([id,s])=>{
+    const p=prevData[id]; const chg=p?((s.revenue-p.revenue)/p.revenue*100).toFixed(1):null;
+    return `<tr>
+      <td><div class="pc"><div class="av" style="${avStyle(id)}">${getInitials(DB.affiliates[id]?.name||id)}</div><strong>${DB.affiliates[id]?.name||id}</strong></div></td>
+      <td>${s.orders}</td><td><strong>${fE(s.revenue)}</strong></td><td>${fE2(s.commission)}</td>
+      <td>${provPct(s.commission,s.revenue)}</td>
+      <td class="${chg>0?'up':chg<0?'dn':'neu'}">${chg!==null?(chg>0?'+':'')+chg+'%':'Neu'}</td>
+      <td><div style="display:flex;align-items:center;gap:5px;"><div style="height:4px;width:${Math.max(4,Math.round(s.revenue/t.revenue*70))}px;background:${getColor(id)};border-radius:2px;"></div>${((s.revenue/t.revenue)*100).toFixed(0)}%</div></td>
+    </tr>`;
+  }).join('');
+  document.getElementById('mo-bars').innerHTML=sorted.map(([id,s])=>
+    `<div class="bar-row"><div class="bar-lbl">${DB.affiliates[id]?.name||id}</div><div class="bar-track"><div class="bar-fill" style="width:${(s.revenue/t.revenue*100).toFixed(1)}%;background:${getColor(id)};"></div></div><div class="bar-val">${fE(s.revenue)}</div></div>`
+  ).join('');
+  const months=Object.keys(mt).sort();
+  if(charts['mo-chart']){ charts['mo-chart'].destroy(); delete charts['mo-chart']; }
+  const ctx=document.getElementById('mo-chart')?.getContext('2d'); if(!ctx) return;
+  charts['mo-chart']=new Chart(ctx,{type:'line',data:{labels:months.map(mo2=>monthLabel(mo2)),datasets:[{label:'Umsatz',data:months.map(mo2=>mt[mo2].revenue),borderColor:'#1A65B5',borderWidth:2,pointRadius:months.map(mo2=>mo2===m?5:2),pointBackgroundColor:months.map(mo2=>mo2===m?'#1A65B5':'#B5D4F4'),fill:false,tension:.35}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{font:{size:9},color:'#888'},grid:{display:false}},y:{ticks:{font:{size:9},color:'#888',callback:v=>'€'+Math.round(v/1000)+'K'},grid:{color:'rgba(0,0,0,0.04)'}}}}});
+}
+
+// ALL SALES
+function renderSales(){
+  const moSel=document.getElementById('sales-mo-filter');
+  const affSel=document.getElementById('sales-aff-filter');
+  if(moSel.options.length<=1){
+    const months=[...new Set(DB.sales.map(s=>s.date.slice(0,7)))].sort().reverse();
+    months.forEach(m=>{ const o=document.createElement('option'); o.value=m; o.textContent=monthDropdown(m); moSel.appendChild(o); });
+  }
+  if(affSel.options.length<=1){
+    const affs=[...new Set(DB.sales.map(s=>s.affiliate_id))];
+    affs.sort((a,b)=>(DB.affiliates[a]?.name||a).localeCompare(DB.affiliates[b]?.name||b)).forEach(id=>{ const o=document.createElement('option'); o.value=id; o.textContent=DB.affiliates[id]?.name||id; affSel.appendChild(o); });
+  }
+  const q=(document.getElementById('sales-search')?.value||'').toLowerCase();
+  const moF=moSel.value; const affF=affSel.value;
+  let filtered=DB.sales.filter(s=>{
+    if(moF && s.date.slice(0,7)!==moF) return false;
+    if(affF && s.affiliate_id!==affF) return false;
+    if(q && !(s.id.includes(q)||(DB.affiliates[s.affiliate_id]?.name||'').toLowerCase().includes(q)||s.date.includes(q))) return false;
+    return true;
+  }).sort((a,b)=>b.date.localeCompare(a.date));
+  document.getElementById('sales-count').textContent=filtered.length+' von '+DB.sales.length+' Sales';
+  document.getElementById('sales-tbody').innerHTML=filtered.map(s=>`<tr>
+    <td style="font-size:11px;">${new Date(s.date).toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'})}</td>
+    <td style="font-size:10px;color:var(--txt2);font-family:monospace;">${s.id}</td>
+    <td><div class="pc"><div class="av" style="${avStyle(s.affiliate_id)};width:22px;height:22px;font-size:8px;">${getInitials(DB.affiliates[s.affiliate_id]?.name||'?')}</div>${DB.affiliates[s.affiliate_id]?.name||s.affiliate_id}</div></td>
+    <td><strong>${fE2(s.revenue)}</strong></td>
+    <td>${fE2(s.commission)}</td>
+    <td>${provPct(s.commission,s.revenue)}</td>
+    <td style="font-size:10px;color:var(--txt2);">${s.coupon||'—'}</td>
+    <td><button class="btn" style="padding:3px 8px;font-size:10px;" onclick="editSale('${s.id}')">Bearbeiten</button></td>
+  </tr>`).join('');
+}
+
+// AFFILIATES
+function renderAffiliates(at,mo){
+  if(!at){ at=computeAlltime(); mo=computeMonthly(); }
+  const fm=computeFirstMonths(mo);
+  const q=(document.getElementById('aff-search')?.value||'').toLowerCase();
+  const sorted=Object.entries(at).sort((a,b)=>b[1].revenue-a[1].revenue).filter(([id])=>(DB.affiliates[id]?.name||id).toLowerCase().includes(q));
+  document.getElementById('aff-table').innerHTML=sorted.map(([id,s])=>`<tr>
+    <td><div class="pc"><div class="av" style="${avStyle(id)}">${getInitials(DB.affiliates[id]?.name||id)}</div><div><div style="font-weight:600;">${DB.affiliates[id]?.name||id}</div><div style="font-size:9px;color:var(--txt2);">ID: ${id}</div></div></div></td>
+    <td style="font-size:10px;color:var(--txt2);">${DB.affiliates[id]?.email||'—'}</td>
+    <td>${s.orders}</td><td><strong>${fE(s.revenue)}</strong></td><td>${fE2(s.commission)}</td>
+    <td>${provPct(s.commission,s.revenue)}</td><td>${avgOrd(s.revenue,s.orders)}</td>
+    <td style="font-size:10px;color:var(--txt2);">${fm[id]?monthDropdown(fm[id]):'—'}</td>
+    <td><button class="btn" style="padding:3px 8px;font-size:10px;" onclick="showAffDetail('${id}')">Detail</button></td>
+  </tr>`).join('');
+}
+
+// AFFILIATE DETAIL MODAL
+function showAffDetail(id){
+  const at=computeAlltime(); const mo=computeMonthly(); const mt=computeMonthlyTotals(mo);
+  const s=at[id]; const name=DB.affiliates[id]?.name||id;
+  document.getElementById('modal-aff-title').textContent=name;
+  const months=Object.keys(mt).sort();
+  const monthRows=months.filter(m=>mo[m]&&mo[m][id]).map(m=>{
+    const md=mo[m][id];
+    return `<tr><td>${monthDropdown(m)}</td><td>${md.orders}</td><td>${fE(md.revenue)}</td><td>${fE2(md.commission)}</td><td>${provPct(md.commission,md.revenue)}</td></tr>`;
+  }).join('');
+  document.getElementById('modal-aff-body').innerHTML=`
+    <div style="display:flex;gap:10px;margin-bottom:14px;">
+      <div class="metric" style="flex:1;"><div class="mlbl">Umsatz</div><div class="mval" style="font-size:18px;">${fE(s.revenue)}</div></div>
+      <div class="metric" style="flex:1;"><div class="mlbl">Provision</div><div class="mval" style="font-size:18px;">${fE2(s.commission)}</div><div class="mch neu">${provPct(s.commission,s.revenue)}</div></div>
+      <div class="metric" style="flex:1;"><div class="mlbl">Sales</div><div class="mval" style="font-size:18px;">${s.orders}</div><div class="mch neu">Ø ${fE(s.revenue/s.orders)}</div></div>
+    </div>
+    <div style="font-size:11px;color:var(--txt2);margin-bottom:8px;">${DB.affiliates[id]?.email||''}</div>
+    <div class="tw"><table><thead><tr><th>Monat</th><th>Sales</th><th>Umsatz</th><th>Provision</th><th>Prov.%</th></tr></thead><tbody>${monthRows}</tbody></table></div>`;
+  openModal('modal-aff');
+}
+
+// REPORTS
+function renderReportsInit(mo,mt){
+  const sel=document.getElementById('rep-sel');
+  const months=Object.keys(mt).sort().reverse();
+  sel.innerHTML=months.map(m=>`<option value="${m}">${monthDropdown(m)}</option>`).join('');
+  renderReports();
+}
+function renderReports(){
+  const mo=computeMonthly(), mt=computeMonthlyTotals(mo);
+  const sel=document.getElementById('rep-sel'); if(!sel.options.length){ renderReportsInit(mo,mt); return; }
+  const m=sel.value; if(!m) return;
+  const allMonths=Object.keys(mt).sort(); const prev=allMonths.filter(x=>x<m).pop();
+  const t=mt[m]||{revenue:0,commission:0,orders:0};
+  const prevT=prev?mt[prev]:{revenue:0};
+  const chg=prevT.revenue?((t.revenue-prevT.revenue)/prevT.revenue*100).toFixed(1):null;
+  document.getElementById('rep-card-title').textContent='Monatsberichte — '+monthDropdown(m);
+  const affData=mo[m]||{}; const prevData=prev&&mo[prev]?mo[prev]:{};
+  document.getElementById('rep-aff').textContent=Object.keys(affData).length+' Affiliates';
+  document.getElementById('rep-ord').textContent=t.orders+' Sales';
+  document.getElementById('rep-rev').textContent=fE(t.revenue);
+  document.getElementById('rep-revch').className='mch '+(chg>0?'up':chg<0?'dn':'neu');
+  document.getElementById('rep-revch').textContent=chg?((chg>0?'+':'')+chg+'% vs. '+monthDropdown(prev)):'Erstes Monat';
+  document.getElementById('rep-com').textContent=fE2(t.commission);
+  document.getElementById('rep-comr').textContent=provPct(t.commission,t.revenue)+' Rate';
+  const stCycle=['ba','bb','bw','bi'];
+  const stLabel={ba:'Versendet',bb:'Bestätigt',bw:'Ausstehend',bi:'Entwurf'};
+  document.getElementById('rep-table').innerHTML=Object.entries(affData).sort((a,b)=>b[1].revenue-a[1].revenue).map(([id,s],i)=>{
+    const p=prevData[id]; const chg=p?((s.revenue-p.revenue)/p.revenue*100).toFixed(1):null;
+    const stC=stCycle[i%stCycle.length];
+    return `<tr>
+      <td><div class="pc"><div class="av" style="${avStyle(id)}">${getInitials(DB.affiliates[id]?.name||id)}</div><div><div style="font-weight:600;">${DB.affiliates[id]?.name||id}</div><div style="font-size:9px;color:var(--txt2);">${DB.affiliates[id]?.email||''}</div></div></div></td>
+      <td>${s.orders}</td><td><strong>${fE(s.revenue)}</strong></td><td>${fE2(s.commission)}</td>
+      <td>${provPct(s.commission,s.revenue)}</td>
+      <td class="${chg>0?'up':chg<0?'dn':'neu'}">${chg!==null?(chg>0?'+':'')+chg+'%':'Neu'}</td>
+      <td><span class="badge ${stC}">${stLabel[stC]}</span></td>
+      <td><button class="btn" style="padding:3px 8px;font-size:10px;" onclick="openReportDetail('${id}','${m}')">Öffnen</button></td>
+    </tr>`;
+  }).join('');
+}
+
+function openReportDetail(aid,month){
+  const mo=computeMonthly(),mt=computeMonthlyTotals(mo),at=computeAlltime();
+  const s=mo[month]?.[aid]; if(!s){ toast('Keine Daten.'); return; }
+  const allM=Object.keys(mt).sort(); const prev=allM.filter(x=>x<month).pop();
+  const ps=prev&&mo[prev]?.[aid];
+  const chg=ps?((s.revenue-ps.revenue)/ps.revenue*100).toFixed(1):null;
+  const name=DB.affiliates[aid]?.name||aid; const ats=at[aid]||{};
+  document.getElementById('modal-rep-title').textContent='Monatsbericht '+monthDropdown(month)+' — '+name;
+  document.getElementById('modal-rep-body').innerHTML=`
+    <div style="display:flex;align-items:center;gap:10px;padding:12px;background:var(--bg3);border-radius:var(--r);margin-bottom:14px;">
+      <div class="av" style="${avStyle(aid)};width:36px;height:36px;font-size:13px;font-weight:800;">${getInitials(name)}</div>
+      <div><div style="font-weight:700;">${name}</div><div style="font-size:10px;color:var(--txt2);">${DB.affiliates[aid]?.email||''}</div></div>
+      <div style="margin-left:auto;text-align:right;"><div style="font-size:9px;color:var(--txt2);">Berichtsmonat</div><div style="font-weight:700;font-size:12px;">${monthDropdown(month)}</div></div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px;">
+      <div class="metric"><div class="mlbl">Umsatz</div><div class="mval" style="font-size:17px;">${fE(s.revenue)}</div><div class="mch ${chg>0?'up':chg<0?'dn':'neu'}">${chg?((chg>0?'+':'')+chg+'% vs. '+monthDropdown(prev)):'Erster Monat'}</div></div>
+      <div class="metric"><div class="mlbl">Provision</div><div class="mval" style="font-size:17px;">${fE2(s.commission)}</div><div class="mch neu">${provPct(s.commission,s.revenue)}</div></div>
+      <div class="metric"><div class="mlbl">Sales</div><div class="mval" style="font-size:17px;">${s.orders}</div><div class="mch neu">Ø ${fE(s.revenue/s.orders)}/Sale</div></div>
+    </div>
+    <div style="font-size:10px;font-weight:700;color:var(--txt2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">Einzel-Sales diesem Monat</div>
+    <div class="tw"><table><thead><tr><th>Datum</th><th>Order-ID</th><th>Umsatz</th><th>Provision</th><th></th></tr></thead><tbody>${
+      DB.sales.filter(s2=>s2.affiliate_id===aid&&s2.date.startsWith(month)).sort((a,b)=>b.date.localeCompare(a.date)).map(s2=>`<tr>
+        <td>${new Date(s2.date).toLocaleDateString('de-DE')}</td>
+        <td style="font-family:monospace;font-size:10px;">${s2.id}</td>
+        <td>${fE2(s2.revenue)}</td><td>${fE2(s2.commission)}</td>
+        <td><button class="btn" style="padding:2px 7px;font-size:9px;" onclick="closeModal('modal-report');editSale('${s2.id}')">Edit</button></td>
+      </tr>`).join('')
+    }</tbody></table></div>
+    <div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border);display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:11px;">
+      <div><span style="color:var(--txt2);">All-Time Umsatz:</span> <strong>${fE(ats.revenue)}</strong></div>
+      <div><span style="color:var(--txt2);">All-Time Sales:</span> <strong>${ats.orders}</strong></div>
+      <div><span style="color:var(--txt2);">All-Time Provision:</span> <strong>${fE2(ats.commission)}</strong></div>
+      <div><span style="color:var(--txt2);">Ø pro Sale:</span> <strong>${avgOrd(ats.revenue,ats.orders)}</strong></div>
+    </div>`;
+  openModal('modal-report');
+}
+
+// REVIEWS
+function renderReviews(at){
+  if(!at) at=computeAlltime();
+  const affsSorted=Object.entries(at).sort((a,b)=>b[1].revenue-a[1].revenue);
+  const dates=['2026-05-06','2026-05-13','2026-05-20','2026-05-27','2026-06-03','2026-06-10','2026-06-17','2026-06-24','2026-07-01','2026-07-08','2026-07-15','2026-07-22'];
+  const items=affsSorted.slice(0,dates.length).map(([id],i)=>({id,days:Math.ceil((new Date(dates[i])-new Date())/86400000),date:dates[i]}));
+  document.getElementById('rev-next').textContent=DB.affiliates[items[0]?.id]?.name||'—';
+  document.getElementById('rev-nextdate').textContent=items[0]?.date?new Date(items[0].date).toLocaleDateString('de-DE',{day:'numeric',month:'long'}):'—';
+  document.getElementById('rev-list').innerHTML=items.map(({id,days,date})=>`
+    <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);">
+      <div class="av" style="${avStyle(id)}">${getInitials(DB.affiliates[id]?.name||'?')}</div>
+      <div style="flex:1;"><div style="font-weight:600;font-size:12px;">${DB.affiliates[id]?.name||id}</div><div style="font-size:10px;color:var(--txt2);margin-top:1px;">${new Date(date).toLocaleDateString('de-DE',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}</div></div>
+      <span class="badge ${days<3?'br':days<14?'bw':'bp'}">in ${days}T</span>
+      <button class="btn" style="padding:3px 8px;font-size:10px;" onclick="toast('Agenda wird vorbereitet…')">Agenda</button>
+    </div>`).join('');
+}
+
+// REMINDERS
+function renderReminders(){
+  document.getElementById('rem-rules').innerHTML=DB.rules.map(r=>{
+    const c={'Monatlich':'#1A65B5','Quartalsweise':'#4E48B0','Sofort':'#B03030','Trigger':'#B87318'}[r.type]||'#888';
+    return `<div style="display:flex;align-items:center;gap:9px;padding:9px 0;border-bottom:1px solid var(--border);">
+      <div style="width:26px;height:26px;border-radius:var(--r);background:${c}18;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><div style="width:7px;height:7px;border-radius:50%;background:${c};"></div></div>
+      <div style="flex:1;"><div style="font-size:11px;font-weight:600;">${r.name}</div><div style="font-size:10px;color:var(--txt2);">${r.desc}</div></div>
+      <span class="badge bb" style="background:${c}14;color:${c};">${r.type}</span>
+      <button class="toggle ${r.enabled?'on':'off'}" style="width:30px;height:17px;border-radius:9px;cursor:pointer;transition:background .2s;position:relative;border:none;padding:0;background:${r.enabled?'#1A65B5':'#b4b2a9'};" onclick="toggleRule(${r.id})"><div style="width:13px;height:13px;border-radius:50%;background:#fff;position:absolute;top:2px;left:${r.enabled?'15px':'2px'};transition:left .2s;"></div></button>
+    </div>`;
+  }).join('');
+  const mo=computeMonthly(),at=computeAlltime();
+  const sorted=Object.entries(at).sort((a,b)=>b[1].revenue-a[1].revenue).slice(0,4);
+  document.getElementById('rem-preview').innerHTML=`
+    <div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border);font-size:11px;"><div style="width:7px;height:7px;border-radius:50%;background:#B87318;"></div><div style="flex:1;"><div style="font-weight:600;">Monatsbericht Mai</div><div style="font-size:10px;color:var(--txt2);">Generierung für alle Affiliates · 28. Apr</div></div><div style="font-size:9px;color:var(--txt3);">in 6T</div></div>
+    ${sorted.map(([id])=>`<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border);font-size:11px;"><div style="width:7px;height:7px;border-radius:50%;background:#4E48B0;"></div><div style="flex:1;"><div style="font-weight:600;">Review ${DB.affiliates[id]?.name||id}</div><div style="font-size:10px;color:var(--txt2);">Quartals-Review Q2 2026</div></div></div>`).join('')}`;
+  document.getElementById('rem-channels').innerHTML=[{n:'E-Mail',a:true},{n:'Dashboard',a:true},{n:'Slack',a:false},{n:'SMS',a:false}].map(c=>`
+    <div style="padding:10px;border-radius:var(--r);border:${c.a?'2px solid var(--blue)':'1px solid var(--border)'};background:${c.a?'var(--blue-l)':'transparent'};cursor:pointer;transition:all .1s;" onclick="this.style.border=this.style.border.includes('2px')?'1px solid var(--border)':'2px solid var(--blue)';this.style.background=this.style.background.includes('blue-l')?'transparent':'var(--blue-l)';">
+      <div style="font-size:11px;font-weight:700;${c.a?'color:var(--blue-d);':''}">${c.n}</div>
+      <div style="font-size:9px;color:var(--txt2);margin-top:2px;">${c.a?'Aktiv':'Inaktiv'}</div>
+    </div>`).join('');
+}
+function toggleRule(id){ const r=DB.rules.find(x=>x.id===id); if(r){ r.enabled=!r.enabled; saveDB(); renderReminders(); toast(r.enabled?'Aktiviert.':'Deaktiviert.'); } }
+function addRule(){ const name=document.getElementById('rule-name').value.trim(); if(!name){ toast('Name eingeben!'); return; } DB.rules.push({id:DB.nextId++,name,desc:document.getElementById('rule-desc').value.trim()||'—',type:document.getElementById('rule-type').value,enabled:true}); saveDB(); closeModal('modal-rule'); renderReminders(); toast('Regel hinzugefügt!'); }
+
+// SALE CRUD
+function openAddSale(){
+  document.getElementById('modal-sale-title').textContent='Sale hinzufügen';
+  document.getElementById('sale-edit-id').value='';
+  document.getElementById('sale-date').value=new Date().toISOString().slice(0,10);
+  document.getElementById('sale-orderid').value='';
+  document.getElementById('sale-revenue').value='';
+  document.getElementById('sale-commission').value='';
+  document.getElementById('sale-coupon').value='';
+  document.getElementById('sale-delete-btn').style.display='none';
+  populateAffSelect('');
+  openModal('modal-sale');
+}
+function editSale(id){
+  const s=DB.sales.find(x=>x.id===id); if(!s){ toast('Sale nicht gefunden.'); return; }
+  document.getElementById('modal-sale-title').textContent='Sale bearbeiten';
+  document.getElementById('sale-edit-id').value=id;
+  document.getElementById('sale-date').value=s.date;
+  document.getElementById('sale-orderid').value=s.id;
+  document.getElementById('sale-revenue').value=s.revenue;
+  document.getElementById('sale-commission').value=s.commission;
+  document.getElementById('sale-coupon').value=s.coupon||'';
+  document.getElementById('sale-delete-btn').style.display='';
+  populateAffSelect(s.affiliate_id);
+  openModal('modal-sale');
+}
+function populateAffSelect(selectedId){
+  const sel=document.getElementById('sale-affiliate');
+  const affs=Object.entries(DB.affiliates).sort((a,b)=>a[1].name.localeCompare(b[1].name));
+  sel.innerHTML=affs.map(([id,a])=>`<option value="${id}" ${id===selectedId?'selected':''}>${a.name}</option>`).join('');
+}
+function saveSale(){
+  const editId=document.getElementById('sale-edit-id').value;
+  const date=document.getElementById('sale-date').value;
+  const revenue=parseFloat(document.getElementById('sale-revenue').value);
+  const commission=parseFloat(document.getElementById('sale-commission').value);
+  if(!date||isNaN(revenue)||isNaN(commission)){ toast('Pflichtfelder ausfüllen!'); return; }
+  const affId=document.getElementById('sale-affiliate').value;
+  const orderId=document.getElementById('sale-orderid').value.trim()||String(DB.nextId++);
+  const coupon=document.getElementById('sale-coupon').value.trim();
+  if(editId){
+    const s=DB.sales.find(x=>x.id===editId);
+    if(s){ s.date=date; s.affiliate_id=affId; s.revenue=revenue; s.commission=commission; s.coupon=coupon; }
+  } else {
+    DB.sales.push({id:orderId,date,affiliate_id:affId,revenue,commission,coupon});
+  }
+  saveDB(); closeModal('modal-sale');
+  const v=document.querySelector('.nav-item.active')?.dataset.view;
+  if(v) renderView(v);
+  toast(editId?'Sale aktualisiert!':'Sale hinzugefügt!');
+}
+function deleteSale(){
+  const editId=document.getElementById('sale-edit-id').value;
+  if(!editId||!confirm('Sale wirklich löschen?')) return;
+  DB.sales=DB.sales.filter(s=>s.id!==editId);
+  saveDB(); closeModal('modal-sale');
+  const v=document.querySelector('.nav-item.active')?.dataset.view;
+  if(v) renderView(v);
+  toast('Sale gelöscht.');
+}
+
+// CSV UPLOAD
+function handleCSV(e){
+  const file=e.target.files[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    try{
+      const lines=ev.target.result.split('\n');
+      const h=lines[0].split(',');
+      const gi=n=>h.indexOf(n);
+      const iDate=gi('Order Date'),iId=gi('Order ID'),iAid=gi('Affiliate ID'),iAname=gi('Affiliate Name'),iAemail=gi('Affiliate Email'),iRev=gi('Order Total'),iCom=gi('Affiliate Commission'),iSt=gi('Order Status');
+      let added=0,skip=0,dupes=0;
+      const existingIds=new Set(DB.sales.map(s=>s.id));
+      for(let i=1;i<lines.length;i++){
+        const c=lines[i].split(','); if(c.length<10) continue;
+        if(c[iSt]!=='approved'){skip++;continue;}
+        const id=c[iId]?.trim();
+        if(existingIds.has(id)){dupes++;continue;}
+        const aid=c[iAid]?.trim();
+        if(!DB.affiliates[aid]) DB.affiliates[aid]={name:c[iAname]?.trim()||aid,email:c[iAemail]?.trim()||''};
+        DB.sales.push({id,date:c[iDate]?.slice(0,10),affiliate_id:aid,revenue:parseFloat(c[iRev])||0,commission:parseFloat(c[iCom])||0,coupon:''});
+        added++;
+      }
+      saveDB();
+      document.getElementById('upload-status').innerHTML=`<span style="color:var(--green);font-weight:600;">✓ ${added} neue Sales importiert · ${skip} übersprungen · ${dupes} Duplikate ignoriert</span>`;
+      toast('Import abgeschlossen!');
+    }catch(err){ document.getElementById('upload-status').innerHTML=`<span style="color:var(--red);">Fehler: ${err.message}</span>`; }
+  };
+  reader.readAsText(file);
+}
+function exportData(){ const blob=new Blob([JSON.stringify(DB,null,2)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='affilitrack-backup-'+new Date().toISOString().slice(0,10)+'.json'; a.click(); toast('Exportiert!'); }
+function importJSON(e){ const f=e.target.files[0]; if(!f) return; const r=new FileReader(); r.onload=ev=>{ try{ DB=JSON.parse(ev.target.result); saveDB(); location.reload(); }catch{ toast('Fehler!'); } }; r.readAsText(f); }
+
+// ── AFFILIATE EXTENDED META ───────────────────────────────────────────────────
+const AFF_META = {
+  "11496345": {type:"Blog/SEO", coupon:"ENERGIE30", joinedDays:365, priority:"skalieren"},
+  "11584381": {type:"Blog/Magazin", coupon:"HAUSMAGAZIN30", joinedDays:365, priority:"skalieren"},
+  "18001717": {type:"Influencer", coupon:"VALLI30", joinedDays:365, priority:"skalieren"},
+  "8943290":  {type:"Blog/Smart Home", coupon:"SMART30", joinedDays:300, priority:"ausbauen"},
+  "11859874": {type:"Magazin", coupon:"HEISE30", joinedDays:280, priority:"ausbauen"},
+  "15333241": {type:"Handwerk-Portal", coupon:"HWK30", joinedDays:300, priority:"ausbauen"},
+  "16907907": {type:"YouTube", coupon:"SVEN30", joinedDays:365, priority:"reaktivieren"},
+  "18253213": {type:"Stadtwerk", coupon:"SWK30", joinedDays:270, priority:"reaktivieren"},
+  "19454217": {type:"Stadtwerk", coupon:"LOEBAU30", joinedDays:60, priority:"ausbauen"},
+  "8879118":  {type:"Regionalportal", coupon:"INFRANKEN30", joinedDays:90, priority:"ausbauen"},
+  "4072586":  {type:"Deal-Seite", coupon:"DEAL30", joinedDays:365, priority:"reaktivieren"},
+  "15143423": {type:"Blog/Energie", coupon:"EEA30", joinedDays:90, priority:"ausbauen"},
+  "12301585": {type:"Blog/Smart Home", coupon:"FOX30", joinedDays:200, priority:"aktivieren"},
+  "16789201": {type:"YouTube", coupon:"JAN30", joinedDays:180, priority:"aktivieren"},
+  "19283022": {type:"Stadtwerk", coupon:"ERENJA30", joinedDays:30, priority:"aktivieren"},
+  "6050214":  {type:"Sonstige", coupon:"KUMAR30", joinedDays:220, priority:"prüfen"},
+};
+
+const ONBOARDING_STEPS = ["Einladung angenommen","Tracking-Link erhalten","Gutscheincode erstellt","Link getestet","Platzierung live","Bildmaterial erhalten","Textbausteine erhalten","Follow-up geplant"];
+
+function getOnboarding(id){
+  if(!DB.onboarding) DB.onboarding={};
+  if(!DB.onboarding[id]) DB.onboarding[id]= Array(ONBOARDING_STEPS.length).fill(false);
+  const at=computeAlltime();
+  // auto-check first 3 if they have sales
+  if(at[id]){ DB.onboarding[id][0]=true; DB.onboarding[id][1]=true; DB.onboarding[id][2]=true; }
+  return DB.onboarding[id];
+}
+function onboardingScore(id){ const o=getOnboarding(id); return o.filter(Boolean).length; }
+function onboardingPct(id){ return Math.round(onboardingScore(id)/ONBOARDING_STEPS.length*100); }
+
+// ── HEALTH SCORE ──────────────────────────────────────────────────────────────
+function getHealth(id, at){
+  const s=at[id];
+  if(!s) return {status:'rot',label:'Inaktiv – kein Sale',color:'#B03030',bg:'#FAEAEA'};
+  const lastSale=DB.sales.filter(x=>x.affiliate_id===id).sort((a,b)=>b.date.localeCompare(a.date))[0];
+  if(!lastSale) return {status:'rot',label:'Inaktiv – kein Sale',color:'#B03030',bg:'#FAEAEA'};
+  const daysSince=Math.ceil((new Date()-new Date(lastSale.date))/86400000);
+  if(daysSince<=60) return {status:'grün',label:'Aktiv',color:'#357A0E',bg:'#EBF5DC'};
+  if(daysSince<=120) return {status:'gelb',label:'Gefährdet',color:'#B87318',bg:'#FAF0DC'};
+  return {status:'rot',label:'Inaktiv',color:'#B03030',bg:'#FAEAEA'};
+}
+
+function getLastSaleDate(id){
+  const s=DB.sales.filter(x=>x.affiliate_id===id).sort((a,b)=>b.date.localeCompare(a.date))[0];
+  return s?s.date:null;
+}
+
+function daysSinceLastSale(id){
+  const d=getLastSaleDate(id); if(!d) return 9999;
+  return Math.ceil((new Date()-new Date(d))/86400000);
+}
+
+function getNextAction(id, at){
+  if(!at[id]) return {label:'Aktivieren — ersten Sale anstreben',urgency:'br'};
+  const days=daysSinceLastSale(id);
+  if(days>120) return {label:'Dringend reaktivieren',urgency:'br'};
+  if(days>60) return {label:'Performance-Check einleiten',urgency:'bw'};
+  if(days>30) return {label:'Follow-up & Optimierung',urgency:'bw'};
+  return {label:'Skalieren',urgency:'ba'};
+}
+
+// ── PIPELINE VIEW ─────────────────────────────────────────────────────────────
+function renderPipeline(at,mo,mt){
+  const allAffs=Object.keys(DB.affiliates);
+  const withSales=Object.keys(at);
+  const noSales=allAffs.filter(id=>!at[id]);
+  const totalRev=Object.values(at).reduce((s,x)=>s+x.revenue,0);
+  const actRate=Math.round(withSales.length/allAffs.length*100);
+
+  document.getElementById('pipe-kpis').innerHTML=`
+    <div class="metric"><div class="mlbl">Affiliates gesamt</div><div class="mval">${allAffs.length}</div><div class="mch neu">im System</div></div>
+    <div class="metric"><div class="mlbl">Mit Sales</div><div class="mval" style="color:var(--green);">${withSales.length}</div><div class="mch up">Sales Rate ${Math.round(withSales.length/allAffs.length*100)}%</div></div>
+    <div class="metric"><div class="mlbl">Ohne Sales</div><div class="mval" style="color:var(--red);">${noSales.length}</div><div class="mch dn">größter Hebel</div></div>
+    <div class="metric"><div class="mlbl">Activation Rate</div><div class="mval">${actRate}%</div><div class="mch ${actRate>=70?'up':actRate>=50?'neu':'dn'}">${actRate>=70?'Gut':actRate>=50?'Ausbaufähig':'Kritisch'}</div></div>`;
+
+  // Funnel
+  const stages=[
+    {label:'Eingeladen / Im System',n:allAffs.length,color:'#1A65B5'},
+    {label:'Onboarding ≥50% abgeschlossen',n:allAffs.filter(id=>onboardingPct(id)>=50).length,color:'#4E48B0'},
+    {label:'Platzierung live (angenommen)',n:allAffs.filter(id=>onboardingPct(id)>=60).length,color:'#0F6E56'},
+    {label:'Erste Klicks (geschätzt)',n:Math.round(withSales.length*1.4),color:'#B87318'},
+    {label:'Erster Sale',n:withSales.length,color:'#357A0E'},
+    {label:'Aktiv (Sale <60 Tage)',n:withSales.filter(id=>daysSinceLastSale(id)<=60).length,color:'#357A0E'},
+  ];
+  const maxN=stages[0].n;
+  document.getElementById('pipe-funnel').innerHTML=stages.map(s=>`
+    <div class="bar-row" style="margin-bottom:10px;">
+      <div class="bar-lbl" style="width:200px;font-size:11px;">${s.label}</div>
+      <div class="bar-track" style="height:18px;border-radius:4px;">
+        <div class="bar-fill" style="width:${(s.n/maxN*100).toFixed(0)}%;background:${s.color};height:100%;line-height:18px;font-size:10px;color:#fff;padding-left:8px;font-weight:700;">${s.n}</div>
+      </div>
+    </div>`).join('');
+
+  // Health table
+  const sorted=allAffs.sort((a,b)=>{
+    const ra=(at[a]?.revenue||0), rb=(at[b]?.revenue||0); return rb-ra;
+  });
+  document.getElementById('pipe-table').innerHTML=sorted.map(id=>{
+    const s=at[id]||{orders:0,revenue:0,commission:0};
+    const h=getHealth(id,at);
+    const meta=AFF_META[id]||{type:'—',coupon:'—',joinedDays:0,priority:'—'};
+    const lastD=getLastSaleDate(id);
+    const ob=onboardingPct(id);
+    const na=getNextAction(id,at);
+    return `<tr>
+      <td><div class="pc"><div class="av" style="${avStyle(id)}">${getInitials(DB.affiliates[id]?.name||id)}</div><div><div style="font-weight:600;font-size:11px;">${DB.affiliates[id]?.name||id}</div><div style="font-size:9px;color:var(--txt2);">${DB.affiliates[id]?.email||''}</div></div></div></td>
+      <td><span style="font-size:10px;color:var(--txt2);">${meta.type}</span></td>
+      <td><span class="badge" style="background:${h.bg};color:${h.color};">● ${h.label}</span></td>
+      <td style="font-size:10px;${!lastD?'color:var(--red);':''}">${lastD?new Date(lastD).toLocaleDateString('de-DE'):'Kein Sale'}</td>
+      <td>${s.orders||0}</td>
+      <td>${s.revenue?fE(s.revenue):'—'}</td>
+      <td><code style="font-size:9px;background:var(--bg3);padding:1px 5px;border-radius:3px;">${meta.coupon}</code></td>
+      <td>
+        <div style="display:flex;align-items:center;gap:5px;">
+          <div style="flex:1;height:4px;background:var(--bg3);border-radius:2px;overflow:hidden;min-width:40px;"><div style="width:${ob}%;height:100%;background:${ob>=75?'#357A0E':ob>=50?'#B87318':'#B03030'};border-radius:2px;"></div></div>
+          <span style="font-size:9px;color:var(--txt2);white-space:nowrap;">${ob}%</span>
+        </div>
+      </td>
+      <td><span class="badge ${na.urgency}" style="font-size:9px;">${na.label}</span></td>
+      <td><button class="btn" style="padding:2px 7px;font-size:9px;" onclick="openOnboarding('${id}')">Setup</button></td>
+    </tr>`;
+  }).join('');
+
+  // Alerts
+  const alerts=[];
+  allAffs.forEach(id=>{
+    const days=daysSinceLastSale(id);
+    if(!at[id]) alerts.push({color:'#B03030',title:DB.affiliates[id]?.name+' — Noch kein Sale',desc:'Affiliate ist registriert aber hat noch nie konvertiert',action:'Aktivieren'});
+    else if(days>90) alerts.push({color:'#B03030',title:DB.affiliates[id]?.name+' — '+days+' Tage ohne Sale',desc:'Letzter Sale: '+new Date(getLastSaleDate(id)).toLocaleDateString('de-DE'),action:'Reaktivieren'});
+    else if(days>30) alerts.push({color:'#B87318',title:DB.affiliates[id]?.name+' — '+days+' Tage ohne Sale',desc:'Performance-Check empfohlen',action:'Follow-up'});
+  });
+  document.getElementById('pipe-alerts').innerHTML=alerts.slice(0,8).map(a=>`
+    <div style="display:flex;align-items:flex-start;gap:8px;padding:8px 0;border-bottom:1px solid var(--border);font-size:11px;">
+      <div style="width:7px;height:7px;border-radius:50%;background:${a.color};margin-top:3px;flex-shrink:0;"></div>
+      <div style="flex:1;"><div style="font-weight:600;">${a.title}</div><div style="color:var(--txt2);margin-top:1px;font-size:10px;">${a.desc}</div></div>
+      <button class="btn" style="padding:2px 7px;font-size:9px;white-space:nowrap;" onclick="toast('Follow-up für ${a.title.split(' —')[0]} wird vorbereitet…')">${a.action}</button>
+    </div>`).join('')||'<div style="color:var(--txt2);font-size:12px;padding:10px 0;">Keine kritischen Alerts 🎉</div>';
+
+  // Rates
+  document.getElementById('pipe-rates').innerHTML=`
+    <div class="bar-row"><div class="bar-lbl">Sales Rate</div><div class="bar-track"><div class="bar-fill" style="width:${actRate}%;background:#1A65B5;"></div></div><div class="bar-val">${actRate}%</div></div>
+    <div class="bar-row"><div class="bar-lbl">Aktiv (&lt;60T)</div><div class="bar-track"><div class="bar-fill" style="width:${Math.round(withSales.filter(id=>daysSinceLastSale(id)<=60).length/allAffs.length*100)}%;background:#357A0E;"></div></div><div class="bar-val">${Math.round(withSales.filter(id=>daysSinceLastSale(id)<=60).length/allAffs.length*100)}%</div></div>
+    <div class="bar-row"><div class="bar-lbl">Gefährdet</div><div class="bar-track"><div class="bar-fill" style="width:${Math.round(withSales.filter(id=>{const d=daysSinceLastSale(id);return d>60&&d<=120;}).length/allAffs.length*100)}%;background:#B87318;"></div></div><div class="bar-val">${withSales.filter(id=>{const d=daysSinceLastSale(id);return d>60&&d<=120;}).length}</div></div>
+    <div class="bar-row"><div class="bar-lbl">Inaktiv</div><div class="bar-track"><div class="bar-fill" style="width:${Math.round((noSales.length+withSales.filter(id=>daysSinceLastSale(id)>120).length)/allAffs.length*100)}%;background:#B03030;"></div></div><div class="bar-val">${noSales.length+withSales.filter(id=>daysSinceLastSale(id)>120).length}</div></div>
+    <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border);font-size:11px;">
+      <div style="font-weight:700;margin-bottom:8px;color:var(--txt2);font-size:9px;text-transform:uppercase;letter-spacing:.06em;">Automatische Erinnerungen</div>
+      <div style="padding:7px;background:var(--bg3);border-radius:var(--r);margin-bottom:6px;font-size:10px;">📅 <strong>7 Tage kein Klick:</strong> Link-Einbau nachfragen</div>
+      <div style="padding:7px;background:var(--bg3);border-radius:var(--r);margin-bottom:6px;font-size:10px;">📊 <strong>14 Tage Klicks, kein Sale:</strong> Landingpage/Gutschein testen</div>
+      <div style="padding:7px;background:var(--bg3);border-radius:var(--r);margin-bottom:6px;font-size:10px;">⚠️ <strong>30 Tage kein Sale:</strong> Performance-Check einleiten</div>
+      <div style="padding:7px;background:var(--green-l);border-radius:var(--r);font-size:10px;">🎉 <strong>Erster Sale:</strong> Gratulation + Scale-Up planen</div>
+    </div>`;
+}
+
+// ── NO-SALES VIEW ─────────────────────────────────────────────────────────────
+let nosalesTab='all';
+function setNosalesTab(tab, el){
+  nosalesTab=tab;
+  document.querySelectorAll('#nosales-tabs .tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  renderNosalesTable();
+}
+function renderNosales(at){
+  if(!at) at=computeAlltime();
+  const allAffs=Object.keys(DB.affiliates);
+  const noSales=allAffs.filter(id=>!at[id]);
+  const withSalesLow=Object.entries(at).filter(([id,s])=>s.orders<=2).map(([id])=>id);
+
+  document.getElementById('nosales-kpis').innerHTML=`
+    <div class="metric"><div class="mlbl">Ohne jeden Sale</div><div class="mval" style="color:var(--red);">${noSales.length}</div><div class="mch dn">Direkter Handlungsbedarf</div></div>
+    <div class="metric"><div class="mlbl">Nur 1–2 Sales</div><div class="mval" style="color:var(--amber);">${withSalesLow.length}</div><div class="mch neu">Ausbaufähig</div></div>
+    <div class="metric"><div class="mlbl">Umsatz-Potenzial</div><div class="mval">~€${Math.round(noSales.length*15000/1000)*1000 .toLocaleString('de-DE')}</div><div class="mch neu">bei Ø-Performance</div></div>`;
+
+  renderNosalesTable(at);
+}
+function renderNosalesTable(at){
+  if(!at) at=computeAlltime();
+  const allAffs=Object.keys(DB.affiliates);
+  let candidates;
+  if(nosalesTab==='all') candidates=allAffs.filter(id=>!at[id]);
+  else if(nosalesTab==='traffic') candidates=allAffs.filter(id=>!at[id]&&(AFF_META[id]?.joinedDays||0)<180);
+  else if(nosalesTab==='notraffic') candidates=allAffs.filter(id=>!at[id]&&(AFF_META[id]?.joinedDays||0)>=180);
+  else if(nosalesTab==='new') candidates=allAffs.filter(id=>!at[id]&&(AFF_META[id]?.joinedDays||0)<=30);
+  else candidates=allAffs.filter(id=>!at[id]);
+
+  const ACTIONS_MAP={
+    "aktivieren":"Link-Einbau nachfragen",
+    "prüfen":"Tracking prüfen — Sale rejected?",
+    "reaktivieren":"Performance-Check + neues Angebot",
+    "ausbauen":"Gutscheincode senden + Platzierung optimieren",
+  };
+  document.getElementById('nosales-table').innerHTML=candidates.length?candidates.map(id=>{
+    const meta=AFF_META[id]||{type:'—',coupon:'—',joinedDays:0,priority:'aktivieren'};
+    const ob=onboardingPct(id);
+    const health={aktivieren:{label:'Nicht gestartet',cls:'br'},prüfen:{label:'Unklar',cls:'bw'},reaktivieren:{label:'Inaktiv',cls:'br'},ausbauen:{label:'Traffic, kein Sale',cls:'bw'}}[meta.priority]||{label:'Unbekannt',cls:'bi'};
+    const priMap={aktivieren:'Hoch',prüfen:'Mittel',reaktivieren:'Hoch',ausbauen:'Sehr hoch'};
+    const priCls={aktivieren:'br',prüfen:'bw',reaktivieren:'br',ausbauen:'br'};
+    return `<tr>
+      <td><div class="pc"><div class="av" style="${avStyle(id)}">${getInitials(DB.affiliates[id]?.name||id)}</div><div><div style="font-weight:600;font-size:11px;">${DB.affiliates[id]?.name||id}</div><div style="font-size:9px;color:var(--txt2);">${DB.affiliates[id]?.email||''}</div></div></div></td>
+      <td style="font-size:10px;color:var(--txt2);">${meta.type}</td>
+      <td style="font-size:10px;color:var(--txt2);">${meta.joinedDays}T</td>
+      <td style="font-size:10px;color:var(--txt2);">~${Math.round(meta.joinedDays*0.8)} (geschätzt)</td>
+      <td style="color:var(--red);font-size:10px;">Kein Sale</td>
+      <td><code style="font-size:9px;background:var(--bg3);padding:1px 5px;border-radius:3px;">${meta.coupon}</code></td>
+      <td><span class="badge ${health.cls}">● ${health.label}</span></td>
+      <td><span class="badge ${priCls[meta.priority]||'bi'}">${priMap[meta.priority]||'—'}</span></td>
+      <td style="font-size:10px;max-width:160px;">${ACTIONS_MAP[meta.priority]||'Kontaktieren'}</td>
+      <td>
+        <div style="display:flex;gap:4px;flex-wrap:wrap;">
+          <button class="btn" style="padding:2px 6px;font-size:9px;" onclick="toast('Follow-up E-Mail wird vorbereitet für ${(DB.affiliates[id]?.name||id).replace(/'/g,'')}'  )">Follow-up</button>
+          <button class="btn" style="padding:2px 6px;font-size:9px;" onclick="toast('Gutschein ${meta.coupon} wird gesendet…')">Coupon senden</button>
+          <button class="btn" style="padding:2px 6px;font-size:9px;" onclick="openOnboarding('${id}')">Setup</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join(''):`<tr><td colspan="10" style="text-align:center;padding:24px;color:var(--txt2);">Keine Affiliates in dieser Kategorie 🎉</td></tr>`;
+}
+
+// ── ONBOARDING MODAL ──────────────────────────────────────────────────────────
+function openOnboarding(id){
+  const name=DB.affiliates[id]?.name||id;
+  const ob=getOnboarding(id);
+  const meta=AFF_META[id]||{type:'—',coupon:'—'};
+  // build modal dynamically
+  let existing=document.getElementById('modal-onboarding');
+  if(!existing){
+    const div=document.createElement('div'); div.className='modal-ov'; div.id='modal-onboarding';
+    div.innerHTML=`<div class="modal" style="width:500px;"><div class="modal-hd"><div class="modal-title" id="ob-title">Onboarding</div><button class="modal-x" onclick="closeModal('modal-onboarding')">×</button></div><div id="ob-body"></div><div class="modal-ft"><button class="btn" onclick="closeModal('modal-onboarding')">Schließen</button><button class="btn btn-p" onclick="saveOnboarding('${id}')">Speichern</button></div></div>`;
+    document.body.appendChild(div);
+    div.addEventListener('click',e=>{ if(e.target===div) div.classList.remove('open'); });
+  }
+  document.getElementById('ob-title').textContent='Onboarding — '+name;
+  document.getElementById('ob-body').innerHTML=`
+    <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
+      <span class="badge bb">${meta.type}</span>
+      <code style="font-size:10px;background:var(--bg3);padding:2px 8px;border-radius:4px;">${meta.coupon}</code>
+      <span class="badge ${onboardingPct(id)>=75?'ba':onboardingPct(id)>=50?'bw':'br'}">${onboardingPct(id)}% abgeschlossen</span>
+    </div>
+    <div style="height:5px;background:var(--bg3);border-radius:3px;overflow:hidden;margin-bottom:16px;">
+      <div style="width:${onboardingPct(id)}%;height:100%;background:${onboardingPct(id)>=75?'#357A0E':onboardingPct(id)>=50?'#B87318':'#B03030'};border-radius:3px;"></div>
+    </div>
+    ${ONBOARDING_STEPS.map((step,i)=>`
+      <label style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);cursor:pointer;font-size:12px;">
+        <input type="checkbox" id="ob-check-${i}" ${ob[i]?'checked':''} style="width:15px;height:15px;accent-color:var(--blue);cursor:pointer;">
+        <span style="${ob[i]?'text-decoration:line-through;color:var(--txt2);':''}">${step}</span>
+      </label>`).join('')}
+    <div style="margin-top:14px;padding:10px;background:var(--bg3);border-radius:var(--r);font-size:11px;color:var(--txt2);">
+      💡 UTM-Link: <code style="font-size:10px;">?ref=${id}&utm_source=affiliate&utm_medium=partner&utm_campaign=${(name.split(' ')[0]||'aff').toLowerCase()}</code>
+    </div>`;
+  document.getElementById('modal-onboarding').dataset.affid=id;
+  openModal('modal-onboarding');
+}
+function saveOnboarding(idFallback){
+  const id=document.getElementById('modal-onboarding')?.dataset.affid||idFallback;
+  if(!DB.onboarding) DB.onboarding={};
+  DB.onboarding[id]=ONBOARDING_STEPS.map((_,i)=>document.getElementById('ob-check-'+i)?.checked||false);
+  saveDB(); closeModal('modal-onboarding'); toast('Onboarding gespeichert!');
+  const v=document.querySelector('.nav-item.active')?.dataset.view; if(v) renderView(v);
+}
+
+// ── GOAFFPRO LIVE SYNC ────────────────────────────────────────────────────────
+function saveToken(){
+  const t = document.getElementById('api-token-input')?.value?.trim();
+  if(!t){ toast('Bitte API-Token eingeben!'); return; }
+  localStorage.setItem('goaffpro_token', t);
+  document.getElementById('api-token-input').value = '';
+  toast('Token gespeichert!');
+}
+
+function getToken(){ return localStorage.getItem('goaffpro_token')||''; }
+
+// On load: show masked token if saved
+function initTokenUI(){
+  const box = document.getElementById('sync-token-box');
+  const statusBox = document.getElementById('sync-status-box');
+  if(!box) return;
+  const t = getToken();
+  if(t){
+    box.innerHTML = `<div style="display:flex;align-items:center;gap:10px;font-size:12px;">
+      <span style="color:var(--green);font-weight:600;">✓ API-Token gespeichert</span>
+      <span style="color:var(--txt3);font-family:monospace;">${t.slice(0,8)}…</span>
+      <button class="btn btn-sm btn-danger" onclick="localStorage.removeItem('goaffpro_token');location.reload()">Löschen</button>
+    </div>`;
+    if(statusBox) statusBox.style.display='block';
+    const stEl = document.getElementById('sync-status-text');
+    if(stEl) stEl.textContent = 'Bereit — klicke auf "Jetzt synchronisieren"';
+  } else {
+    if(statusBox) statusBox.style.display='none';
+  }
+}
+
+async function syncGoAffPro(mode='all') {
+  const token = getToken();
+  if(!token){
+    toast('Bitte zuerst API-Token eingeben und speichern!');
+    navigate('upload');
+    return;
+  }
+
+  const statusBox = document.getElementById('sync-status-box');
+  const statusEl  = document.getElementById('sync-status-text');
+  const lastEl    = document.getElementById('sync-last');
+  const btn       = document.getElementById('sync-btn');
+  if(statusBox) statusBox.style.display='block';
+  if(btn) btn.disabled = true;
+  if(statusEl){ statusEl.style.color='var(--txt2)'; statusEl.textContent='⏳ Verbinde mit GoAffPro…'; }
+
+  // Use corsproxy.io to bypass CORS — GoAffPro blocks direct browser calls
+  const BASE = 'https://api.goaffpro.com/v1/admin';
+  const PROXY = 'https://corsproxy.io/?url=';
+  const proxyFetch = (path) => fetch(`${PROXY}${encodeURIComponent(BASE+path)}`, {
+    headers: { 'x-goaffpro-access-token': token, 'Content-Type': 'application/json' }
+  });
+
+  let addedSales=0, addedAffs=0, updatedAffs=0;
+
+  try {
+    // ── Affiliates ───────────────────────────────────────────────────────────
+    if(mode==='all' || mode==='affiliates'){
+      if(statusEl) statusEl.textContent='⏳ Lade Affiliates…';
+      const resp = await proxyFetch('/affiliates?limit=250');
+      const text = await resp.text();
+      if(!resp.ok) throw new Error(`Affiliates HTTP ${resp.status}: ${text.slice(0,150)}`);
+      const data = JSON.parse(text);
+      if(data.error) throw new Error('Affiliates API Fehler: '+JSON.stringify(data.error));
+      const affs = data.affiliates || data.data || (Array.isArray(data)?data:[]);
+      if(!affs.length) throw new Error('Keine Affiliates — API-Token korrekt?');
+      affs.forEach(a=>{
+        const id=String(a.id);
+        if(!DB.affiliates[id]){ DB.affiliates[id]={name:a.name||id,email:a.email||''}; addedAffs++; }
+        else { if(a.name) DB.affiliates[id].name=a.name; if(a.email) DB.affiliates[id].email=a.email; updatedAffs++; }
+        if(!AFF_META[id]) AFF_META[id]={type:'Partner',coupon:'FEHLT',joinedDays:0,priority:'aktivieren',visitors:0};
+        if(a.coupon_code) AFF_META[id].coupon=a.coupon_code;
+        if(a.num_visitors!==undefined) AFF_META[id].visitors=parseInt(a.num_visitors)||0;
+        if(a.date_created) AFF_META[id].joinedDays=Math.ceil((new Date()-new Date(a.date_created))/86400000);
+        if(a.referral_code) AFF_META[id].referralCode=a.referral_code;
+      });
+    }
+
+    // ── Orders ───────────────────────────────────────────────────────────────
+    if(mode==='all' || mode==='sales'){
+      if(statusEl) statusEl.textContent='⏳ Lade Orders…';
+      const existingIds=new Set(DB.sales.map(s=>s.id));
+      let offset=0, hasMore=true, totalFetched=0;
+
+      // Use corsproxy.io to bypass CORS restriction
+      const PROXY = 'https://corsproxy.io/?url=';
+
+      while(hasMore){
+        const targetUrl = encodeURIComponent(`${BASE}/orders?count=250&offset=${offset}`);
+        const resp = await fetch(`${PROXY}${targetUrl}`, {
+          headers: {
+            'x-goaffpro-access-token': token,
+            'Content-Type': 'application/json',
+          }
+        });
+        const text = await resp.text();
+        if(!resp.ok) throw new Error(`Orders HTTP ${resp.status}: ${text.slice(0,200)}`);
+        let data;
+        try { data = JSON.parse(text); } catch { throw new Error('JSON parse error: '+text.slice(0,100)); }
+
+        if(data.error) throw new Error('GoAffPro API Fehler: '+JSON.stringify(data.error));
+
+        const batch = data.orders||data.data||(Array.isArray(data)?data:[]);
+        console.log(`Offset ${offset}: ${batch.length} orders`, batch[0]);
+
+        if(!batch.length){ hasMore=false; break; }
+        totalFetched += batch.length;
+
+        batch.forEach(s=>{
+          const id=String(s.id||s.order_id||'');
+          if(!id||existingIds.has(id)) return;
+          const st=s.status||s.order_status||'';
+          if(st==='rejected'||st==='cancelled'||st==='deleted') return;
+          const affId=String(s.affiliate_id||'');
+          const date=(s.created_at||s.date||s.order_date||'').slice(0,10);
+          if(!date||!affId) return;
+          DB.sales.push({id,date,affiliate_id:affId,
+            revenue:parseFloat(s.total||s.order_total||s.revenue||0),
+            commission:parseFloat(s.commission||s.affiliate_commission||0),
+            coupon:s.coupon_code||s.coupon||''});
+          existingIds.add(id);
+          addedSales++;
+        });
+
+        if(batch.length<250){ hasMore=false; }
+        else { offset+=250; }
+        if(offset>5000) hasMore=false;
+      }
+      console.log(`Total: ${totalFetched} fetched, ${addedSales} added`);
+    }
+
+    saveDB();
+    const now=new Date().toLocaleString('de-DE');
+    if(lastEl) lastEl.textContent=`Letzter Sync: ${now}`;
+    if(statusEl){ statusEl.style.color='var(--green)'; statusEl.textContent=`✓ Sync — ${addedSales} neue Sales · ${addedAffs} neue Affiliates · ${updatedAffs} aktualisiert · Gesamt: ${DB.sales.length} Sales`; }
+    const dbInfo=document.getElementById('db-info'); if(dbInfo) dbInfo.textContent=`${DB.sales.length} Sales, ${Object.keys(DB.affiliates).length} Affiliates`;
+    const v=document.querySelector('.nav-item.active')?.dataset.view; if(v&&v!=='upload') renderView(v);
+
+  } catch(err){
+    if(statusEl){ statusEl.style.color='var(--red)'; statusEl.textContent='✗ '+err.message; }
+    console.error(err);
+  } finally {
+    if(btn) btn.disabled=false;
+  }
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+document.getElementById('date-pill').textContent=new Date().toLocaleDateString('de-DE',{day:'numeric',month:'long',year:'numeric'});
+renderDash();
+initTokenUI();
+</script>
+</body>
+</html>
